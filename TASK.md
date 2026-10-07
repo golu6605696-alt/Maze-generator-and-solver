@@ -3,16 +3,16 @@
 Legend: [ ] todo, [~] in progress, [x] done
 
 ## Phase 0: Setup
-- [ ] Choose language and UI approach (record in MEMORY.md)
-- [ ] Create folder structure from ARCHITECTURE.md
-- [ ] Set up test runner and git repo
+- [x] Choose language and UI approach (record in MEMORY.md)
+- [x] Create folder structure from ARCHITECTURE.md
+- [x] Set up test runner and git repo
 
 ## Phase 1: Data Structures
-- [ ] Seeded RNG utility
-- [ ] Stack, Queue
-- [ ] MinHeap (priority queue)
-- [ ] Disjoint Set Union (with path compression and union by rank)
-- [ ] Unit tests for all of the above
+- [x] Seeded RNG utility
+- [x] Stack, Queue
+- [x] MinHeap (priority queue)
+- [x] Disjoint Set Union (with path compression and union by rank)
+- [x] Unit tests for all of the above
 
 ## Phase 2: Core Grid
 - [ ] Cell with wall bitmask and weight
@@ -61,7 +61,7 @@ Legend: [ ] todo, [~] in progress, [x] done
 - [ ] Demo script / presentation notes
 
 ## Current Focus
-Phase 0
+Phase 2: Core Grid
 
 ## Blocked / Questions
 - (none yet)
