@@ -8,11 +8,11 @@ Legend: [ ] todo, [~] in progress, [x] done
 - [x] Set up test runner and git repo
 
 ## Phase 1: Data Structures
-- [ ] Seeded RNG utility
-- [ ] Stack, Queue
-- [ ] MinHeap (priority queue)
-- [ ] Disjoint Set Union (with path compression and union by rank)
-- [ ] Unit tests for all of the above
+- [x] Seeded RNG utility
+- [x] Stack, Queue
+- [x] MinHeap (priority queue)
+- [x] Disjoint Set Union (with path compression and union by rank)
+- [x] Unit tests for all of the above
 
 ## Phase 2: Core Grid
 - [ ] Cell with wall bitmask and weight
@@ -61,7 +61,7 @@ Legend: [ ] todo, [~] in progress, [x] done
 - [ ] Demo script / presentation notes
 
 ## Current Focus
-Phase 1: Data Structures
+Phase 2: Core Grid
 
 ## Blocked / Questions
 - (none yet)

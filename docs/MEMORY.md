@@ -5,13 +5,17 @@ Running log of decisions, lessons, and context. Update as the project evolves. N
 ## Project Snapshot
 - **Name:** Maze Generator & Solver
 - **Type:** DSA project
-- **Status:** In Progress (Phase 0 complete, starting Phase 1)
+- **Status:** In Progress (Phase 1 complete, starting Phase 2)
 - **Language / UI:** JavaScript (ES Modules) + HTML5 Canvas & Vanilla CSS
 - **Current focus:** see TASK.md
 
 ## Key Decisions
 | Date | Decision | Reason |
 |---|---|---|
+| 2026-10-11 | Mulberry32 algorithm for SeededRNG | 32-bit state, deterministic, fast, uniform distribution across platforms |
+| 2026-10-11 | Queue with head pointer + compaction | Amortized O(1) dequeue without O(N) Array.prototype.shift() overhead |
+| 2026-10-11 | MinHeap with custom comparator | Flexible priority queue supporting numbers, cell objects, and weighted pathfinding nodes |
+| 2026-10-11 | DSU with path compression + union by rank | Near-linear O(alpha(V)) time complexity; supports numeric IDs or coordinate string keys |
 | 2026-10-11 | JavaScript (ESM) + HTML5 Canvas + Vanilla CSS | Zero build steps needed; runs natively in modern browsers; completely portable |
 | 2026-10-11 | Native Node.js test runner (`node:test`) | Zero external dependencies; fast, built-in headless testing in Node 24 |
 | 2026-10-11 | Grid-based, 4-directional movement | Simplest graph model; matches classic maze algorithms |
