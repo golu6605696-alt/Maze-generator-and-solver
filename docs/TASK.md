@@ -3,9 +3,9 @@
 Legend: [ ] todo, [~] in progress, [x] done
 
 ## Phase 0: Setup
-- [ ] Choose language and UI approach (record in MEMORY.md)
-- [ ] Create folder structure from ARCHITECTURE.md
-- [ ] Set up test runner and git repo
+- [x] Choose language and UI approach (record in MEMORY.md)
+- [x] Create folder structure from ARCHITECTURE.md
+- [x] Set up test runner and git repo
 
 ## Phase 1: Data Structures
 - [ ] Seeded RNG utility
@@ -61,7 +61,7 @@ Legend: [ ] todo, [~] in progress, [x] done
 - [ ] Demo script / presentation notes
 
 ## Current Focus
-Phase 0
+Phase 1: Data Structures
 
 ## Blocked / Questions
 - (none yet)
