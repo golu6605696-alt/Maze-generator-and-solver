@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maze Generator & Solver - Interactive DSA Visualizer</title>
+  <meta name="description" content="Interactive maze generator and pathfinding visualizer demonstrating graph algorithms, spanning trees (DFS, Prim's, Kruskal's), and optimal solvers (BFS, A*, Dijkstra).">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Top Header Navigation -->
+    <header class="app-header">
+      <div class="header-branding">
+        <div class="logo-badge">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <path d="M7 3v6h6V3"/>
+            <path d="M17 7v10h-6"/>
+            <path d="M3 13h6v8"/>
+            <path d="M17 17h4"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="header-title">Maze Generator & Solver</h1>
+          <p class="header-subtitle">Interactive DSA Graph & Pathfinding Visualizer</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="btn-theme" class="btn btn-outline" type="button" aria-label="Toggle visual theme">
+          🌙 Dark Mode
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Application Grid -->
+    <main class="app-main">
+      <!-- Left Controls Sidebar -->
+      <aside class="sidebar-panel">
+        <div class="card panel-card">
+          <h2 class="card-heading">Generation</h2>
+          
+          <div class="form-group">
+            <div class="form-label-row">
+              <label for="input-size">Maze Dimensions</label>
+              <span id="val-size" class="badge">25x25</span>
+            </div>
+            <input type="range" id="input-size" min="5" max="100" value="25" step="1" class="range-slider">
+          </div>
+
+          <div class="form-group">
+            <label for="input-seed">Deterministic Seed</label>
+            <div class="input-with-button">
+              <input type="text" id="input-seed" placeholder="Random" class="text-input" spellcheck="false">
+              <button id="btn-random-seed" class="btn btn-icon" type="button" title="Generate random seed">🎲</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="select-generator">Algorithm</label>
+            <select id="select-generator" class="select-input">
+              <option value="backtracker">Recursive Backtracker (DFS)</option>
+              <option value="prim">Randomized Prim's</option>
+              <option value="kruskal">Randomized Kruskal's (DSU)</option>
+              <option value="division">Recursive Division</option>
+              <option value="wilson">Wilson's (Uniform Spanning Tree)</option>
+            </select>
+          </div>
+
+          <button id="btn-generate" class="btn btn-primary btn-block" type="button">
+            ⚡ Generate Maze
+          </button>
+
+          <div class="form-group" style="margin-top: 0.75rem; margin-bottom: 0;">
+            <button id="btn-braid" class="btn btn-outline btn-block" type="button" title="Remove dead ends to create loops">
+              🔀 Apply Braid Mode (Loops)
+            </button>
+          </div>
+        </div>
+
+        <div class="card panel-card">
+          <h2 class="card-heading">Pathfinding Solver</h2>
+
+          <div class="form-group">
+            <label for="select-solver">Algorithm</label>
+            <select id="select-solver" class="select-input">
+              <option value="bfs">Breadth-First Search (BFS - Optimal)</option>
+              <option value="astar">A* Search (Manhattan - Optimal)</option>
+              <option value="dijkstra">Dijkstra (Weighted Shortest Path)</option>
+              <option value="dfs">Depth-First Search (DFS)</option>
+              <option value="wall_follower">Wall Follower (Right-Hand Rule)</option>
+              <option value="dead_end">Dead-End Filling (Cul-de-sac Pruning)</option>
+            </select>
+          </div>
+
+          <button id="btn-solve" class="btn btn-success btn-block" type="button">
+            🚀 Solve Maze
+          </button>
+        </div>
+
+        <div class="card panel-card">
+          <h2 class="card-heading">Playback Controls</h2>
+
+          <div class="form-group">
+            <div class="form-label-row">
+              <label for="slider-speed">Animation Speed</label>
+              <span id="val-speed" class="badge">50%</span>
+            </div>
+            <input type="range" id="slider-speed" min="1" max="100" value="50" class="range-slider">
+          </div>
+
+          <div class="btn-group">
+            <button id="btn-pause" class="btn btn-outline flex-1" type="button" disabled>⏸ Pause</button>
+            <button id="btn-step" class="btn btn-outline flex-1" type="button" disabled>⏭ Step</button>
+            <button id="btn-reset" class="btn btn-danger flex-1" type="button">↺ Reset</button>
+          </div>
+        </div>
+
+        <!-- Mode & Persistence -->
+        <div class="card panel-card">
+          <h2 class="card-heading">Editor & Storage</h2>
+          <div class="btn-group" style="margin-bottom: 0.75rem;">
+            <button id="btn-edit-mode" class="btn btn-outline flex-1" type="button" title="Toggle manual editing">
+              ✏️ Edit Mode
+            </button>
+          </div>
+          <div class="btn-group">
+            <button id="btn-save" class="btn btn-outline flex-1" type="button" title="Export as JSON">
+              💾 Save
+            </button>
+            <label class="btn btn-outline flex-1" style="margin: 0; cursor: pointer; text-align: center;" title="Import from JSON">
+              📂 Load
+              <input type="file" id="input-load" accept=".json" style="display: none;">
+            </label>
+          </div>
+        </div>
+
+        <!-- Visual Legend -->
+        <div class="card panel-card legend-card">
+          <h3 class="legend-heading">Color Legend</h3>
+          <div class="legend-grid">
+            <div class="legend-item"><span class="legend-swatch swatch-start"></span> Start (S)</div>
+            <div class="legend-item"><span class="legend-swatch swatch-end"></span> End (E)</div>
+            <div class="legend-item"><span class="legend-swatch swatch-path"></span> Solution Path</div>
+            <div class="legend-item"><span class="legend-swatch swatch-visited"></span> Visited Cell</div>
+            <div class="legend-item"><span class="legend-swatch swatch-frontier"></span> Frontier</div>
+            <div class="legend-item"><span class="legend-swatch swatch-head"></span> Search Head</div>
+            <div class="legend-item"><span class="legend-swatch swatch-terrain"></span> Heavy Terrain</div>
+          </div>
+          <p class="keyboard-tip">Hotkeys: <kbd>Space</kbd> Pause · <kbd>→</kbd> Step · <kbd>R</kbd> Reset</p>
+        </div>
+      </aside>
+
+      <!-- Center & Right Canvas and Stats Viewport -->
+      <section class="viewport-section">
+        <!-- Interactive Canvas Viewport -->
+        <div class="canvas-wrapper">
+          <div class="canvas-header-bar">
+            <div class="status-indicator">
+              <span class="status-dot"></span>
+              <span id="stat-status">Ready</span>
+            </div>
+            <div class="canvas-actions">
+              <button id="btn-race" class="btn btn-outline" type="button" style="padding: 0.4rem 0.9rem; font-size: 0.8rem;">
+                🏁 Race Mode
+              </button>
+              <button id="btn-analytics" class="btn btn-outline" type="button" style="padding: 0.4rem 0.9rem; font-size: 0.8rem;">
+                📈 Analytics
+              </button>
+              <button id="btn-compare" class="btn btn-primary" type="button" style="padding: 0.4rem 0.9rem; font-size: 0.8rem;">
+                📊 Compare All
+              </button>
+            </div>
+          </div>
+          <div class="canvas-container">
+            <canvas id="maze-canvas"></canvas>
+          </div>
+        </div>
+
+        <!-- Real-time Performance & Metrics Panel -->
+        <footer class="stats-footer">
+          <div class="stat-card">
+            <span class="stat-label">Active Algorithm</span>
+            <span id="stat-algorithm" class="stat-value">-</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Cells Visited</span>
+            <span id="stat-visited" class="stat-value">-</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Path Length</span>
+            <span id="stat-path" class="stat-value highlight-green">-</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Total Cost</span>
+            <span id="stat-cost" class="stat-value">-</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Execution Time</span>
+            <span id="stat-time" class="stat-value highlight-blue">-</span>
+          </div>
+        </footer>
+      </section>
+    </main>
+
+    <!-- Comparison Dashboard Modal -->
+    <div id="compare-modal" class="modal-backdrop" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 class="modal-title">Algorithm Benchmark Comparison</h2>
+          <button id="btn-close-modal" class="btn btn-icon" type="button">&times;</button>
+        </div>
+        <div class="modal-body">
+          <table class="benchmark-table">
+            <thead>
+              <tr>
+                <th>Algorithm</th>
+                <th>Status</th>
+                <th>Cells Visited</th>
+                <th>Path Length</th>
+                <th>Total Cost</th>
+                <th>Time (ms)</th>
+              </tr>
+            </thead>
+            <tbody id="benchmark-tbody">
+              <!-- Populated by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Race Mode Duel Modal -->
+    <div id="race-modal" class="modal-backdrop" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 class="modal-title">🏁 Head-to-Head Solver Duel (Race Mode)</h2>
+          <button id="btn-close-race-modal" class="btn btn-icon" type="button">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="race-setup-bar">
+            <div class="form-group" style="flex: 1;">
+              <label for="race-solver-a">Racer A</label>
+              <select id="race-solver-a" class="select-input">
+                <option value="bfs" selected>BFS (Breadth-First)</option>
+                <option value="astar">A* (Manhattan)</option>
+                <option value="dijkstra">Dijkstra</option>
+                <option value="dfs">DFS (Depth-First)</option>
+                <option value="wall_follower">Wall Follower</option>
+                <option value="dead_end">Dead-End Filling</option>
+              </select>
+            </div>
+            <div class="duel-vs">VS</div>
+            <div class="form-group" style="flex: 1;">
+              <label for="race-solver-b">Racer B</label>
+              <select id="race-solver-b" class="select-input">
+                <option value="bfs">BFS (Breadth-First)</option>
+                <option value="astar" selected>A* (Manhattan)</option>
+                <option value="dijkstra">Dijkstra</option>
+                <option value="dfs">DFS (Depth-First)</option>
+                <option value="wall_follower">Wall Follower</option>
+                <option value="dead_end">Dead-End Filling</option>
+              </select>
+            </div>
+            <button id="btn-start-race" class="btn btn-primary" type="button" style="align-self: flex-end; margin-bottom: 1rem;">
+              ⚡ Duel!
+            </button>
+          </div>
+          <div id="race-result-container" class="race-results" style="display: none;">
+            <!-- Populated by JavaScript -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Maze Analytics Modal -->
+    <div id="analytics-modal" class="modal-backdrop" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 class="modal-title">📈 Maze Topological Analytics</h2>
+          <button id="btn-close-analytics-modal" class="btn btn-icon" type="button">&times;</button>
+        </div>
+        <div class="modal-body" id="analytics-content">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
