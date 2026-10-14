@@ -1,34 +1,22 @@
 /**
-<<<<<<< HEAD
  * @file stack.js
- * Standard LIFO (Last-In, First-Out) stack data structure.
- * Used by iterative DFS generators (Recursive Backtracker) and solvers.
- * Complexity: O(1) time for push, pop, peek, isEmpty. O(N) space.
+ * LIFO Stack data structure.
+ * Complexity: push O(1), pop O(1), peek O(1), size O(1), clear O(1).
  */
 
 export class Stack {
   /**
-   * Initializes an empty stack.
+   * @param {number} [initialCapacity=64]
    */
-  constructor() {
-=======
- * LIFO (Last-In-First-Out) Stack data structure.
- * Time Complexity: O(1) for push, pop, peek, isEmpty, size.
- */
-export class Stack {
-  constructor() {
-    /** @private */
->>>>>>> d9250ebfae4ef4809ed5d6bb83f70152d6982564
+  constructor(initialCapacity = 64) {
     this._items = [];
+    if (initialCapacity > 0) {
+      // pre-warm array hint
+    }
   }
 
   /**
-   * Pushes an item onto the top of the stack.
-<<<<<<< HEAD
-   * Complexity: O(1) amortized time.
-   *
-=======
->>>>>>> d9250ebfae4ef4809ed5d6bb83f70152d6982564
+   * Pushes an element onto the stack.
    * @param {*} item
    */
   push(item) {
@@ -36,48 +24,23 @@ export class Stack {
   }
 
   /**
-<<<<<<< HEAD
-   * Removes and returns the top item from the stack, or undefined if empty.
-   * Complexity: O(1) time.
-   *
+   * Removes and returns the top element, or undefined if empty.
    * @returns {*}
-=======
-   * Removes and returns the top item from the stack.
-   * @returns {*|undefined}
->>>>>>> d9250ebfae4ef4809ed5d6bb83f70152d6982564
    */
   pop() {
     return this._items.pop();
   }
 
   /**
-<<<<<<< HEAD
-   * Returns the top item without removing it, or undefined if empty.
-   * Complexity: O(1) time.
-   *
+   * Returns the top element without removing it, or undefined if empty.
    * @returns {*}
    */
   peek() {
-    if (this._items.length === 0) {
-      return undefined;
-    }
-=======
-   * Returns the top item without removing it.
-   * @returns {*|undefined}
-   */
-  peek() {
->>>>>>> d9250ebfae4ef4809ed5d6bb83f70152d6982564
-    return this._items[this._items.length - 1];
+    return this._items.length > 0 ? this._items[this._items.length - 1] : undefined;
   }
 
   /**
-<<<<<<< HEAD
-   * Returns true if the stack contains no items.
-   * Complexity: O(1) time.
-   *
-=======
-   * Checks whether the stack contains no elements.
->>>>>>> d9250ebfae4ef4809ed5d6bb83f70152d6982564
+   * Returns whether the stack has no elements.
    * @returns {boolean}
    */
   isEmpty() {
@@ -85,13 +48,7 @@ export class Stack {
   }
 
   /**
-<<<<<<< HEAD
-   * Returns the number of items currently in the stack.
-   * Complexity: O(1) time.
-   *
-=======
-   * Returns the number of items in the stack.
->>>>>>> d9250ebfae4ef4809ed5d6bb83f70152d6982564
+   * Returns current count of elements.
    * @returns {number}
    */
   get size() {
@@ -99,27 +56,17 @@ export class Stack {
   }
 
   /**
-<<<<<<< HEAD
-   * Removes all items from the stack.
-   * Complexity: O(1) time.
-=======
-   * Clears all items from the stack.
->>>>>>> d9250ebfae4ef4809ed5d6bb83f70152d6982564
+   * Empties the stack.
    */
   clear() {
-    this._items = [];
+    this._items.length = 0;
   }
-<<<<<<< HEAD
 
   /**
-   * Returns a shallow copy of the stack items as an array from bottom to top.
-   * Complexity: O(N) time and space.
-   *
+   * Converts the stack to an array from bottom to top.
    * @returns {Array}
    */
   toArray() {
-    return [...this._items];
+    return this._items.slice();
   }
-=======
->>>>>>> d9250ebfae4ef4809ed5d6bb83f70152d6982564
 }

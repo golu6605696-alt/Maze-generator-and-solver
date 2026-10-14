@@ -1,109 +1,132 @@
 /**
  * @file astar.js
- * A* Search maze solver with Manhattan distance heuristic.
- * Uses a priority queue (MinHeap) on f = g + h to direct search toward the target.
- * Guarantees optimal path on 4-directional grids with admissible heuristic.
- *
- * Complexity: O(V log V) worst-case time, O(V) space, where V = rows * cols.
+ * A* search algorithm using Manhattan heuristic scaled by MIN_WEIGHT.
+ * Complexity: O((V + E) log V) worst case; expands far fewer cells than Dijkstra in practice.
+ * Guarantees optimal (lowest cost) path because heuristic is admissible and consistent.
  */
 
-import { Solver, SolveResult } from './solver.js';
 import { MinHeap } from '../../structures/minheap.js';
-import { manhattanDistance } from '../heuristics.js';
-import { Step } from '../step.js';
-import { reconstructPath } from './reconstruct.js';
+import { BitSet } from '../../structures/bitset.js';
+import { manhattan } from '../heuristics.js';
 
-export class AStar extends Solver {
-  /**
-   * @param {Function} [heuristic=manhattanDistance] - Admissible heuristic function (cell, target) => number
-   */
-  constructor(heuristic = manhattanDistance) {
-    super('A*');
-    this.heuristic = heuristic;
+export class AStarSolver {
+  constructor() {
+    this.id = 'ast';
+    this.name = 'A* Search';
+    this.complexity = Object.freeze({
+      time: 'O((V + E) log V)',
+      space: 'O(V)',
+      note: 'MinHeap on f = g + h; directed heuristic funnel. Admissible & cost-optimal.',
+    });
+    this.guarantees = Object.freeze({
+      optimalHops: false,
+      optimalCost: true,
+    });
   }
 
   /**
-   * Solves the maze using A* informed search.
-   *
    * @param {import('../grid.js').Grid} grid
-   * @param {import('../cell.js').Cell|[number, number]} [start]
-   * @param {import('../cell.js').Cell|[number, number]} [end]
-   * @returns {SolveResult}
+   * @param {object} [opts]
+   * @returns {Generator<object, import('../types.js').PathResult, void>}
    */
-  solve(grid, start, end) {
-    const startTime = performance.now();
-    const { start: startCell, end: endCell } = this._resolveEndpoints(grid, start, end);
+  *solve(grid, opts = {}) {
+    const V = grid.size;
+    const { start, end } = grid;
+    const endR = grid.rowOf(end);
+    const endC = grid.colOf(end);
 
-    const steps = [];
-    const minHeap = new MinHeap((a, b) => {
-      if (a.f !== b.f) return a.f - b.f;
-      return a.h - b.h; // Tie-breaker: prefer closer to goal
-    });
+    const heap = new MinHeap();
+    const gScore = new Int32Array(V).fill(0x3fffffff);
+    const parent = new Int32Array(V).fill(-1);
+    const closed = new BitSet(V);
+    const neighborBuf = new Int32Array(4);
 
-    const gScore = new Float64Array(grid.totalCells).fill(Infinity);
-    const closed = new Uint8Array(grid.totalCells);
-    const parent = new Array(grid.totalCells).fill(null);
+    let expanded = 0;
+    let frontierPeak = 0;
+    let eventCount = 0;
 
-    const startIdx = grid.cellIndex(startCell.row, startCell.col);
-    gScore[startIdx] = 0;
-    const startH = this.heuristic(startCell, endCell);
-    minHeap.push({ cell: startCell, g: 0, h: startH, f: startH });
+    gScore[start] = 0;
+    const startH = manhattan(grid.rowOf(start), grid.colOf(start), endR, endC);
+    heap.insert(start, startH);
+    frontierPeak = 1;
+    eventCount++;
+    yield { t: 'ENQUEUE', cell: start };
 
-    let visitedCount = 0;
-    let reached = false;
+    let found = false;
+    const useWeights = opts.weighted !== false;
 
-    while (!minHeap.isEmpty()) {
-      const { cell: current, g } = minHeap.pop();
-      const currIdx = grid.cellIndex(current.row, current.col);
+    while (!heap.isEmpty()) {
+      frontierPeak = Math.max(frontierPeak, heap.size);
+      const curr = heap.extractMin();
 
-      // Skip stale priority queue entries
-      if (closed[currIdx] === 1) {
-        continue;
-      }
-      closed[currIdx] = 1;
+      if (closed.get(curr)) continue;
+      closed.set(curr);
+      expanded++;
+      const currG = gScore[curr];
+      const currH = manhattan(grid.rowOf(curr), grid.colOf(curr), endR, endC);
+      eventCount++;
+      yield { t: 'VISIT', cell: curr, g: currG, h: currH };
 
-      steps.push(Step.visit(current));
-      visitedCount++;
-
-      if (current.row === endCell.row && current.col === endCell.col) {
-        reached = true;
+      if (curr === end) {
+        found = true;
         break;
       }
 
-      const neighbors = grid.openNeighbors(current);
-      for (let i = 0; i < neighbors.length; i++) {
-        const neighbor = neighbors[i];
-        const nIdx = grid.cellIndex(neighbor.row, neighbor.col);
+      const count = grid.openNeighbors(curr, neighborBuf);
+      for (let i = 0; i < count; i++) {
+        const nb = neighborBuf[i];
+        if (closed.get(nb)) continue;
 
-        if (closed[nIdx] === 1) {
-          continue;
-        }
+        const weight = useWeights ? grid.weightAt(nb) : 1;
+        const tentativeG = currG + weight;
 
-        const tentativeG = g + neighbor.weight;
-        if (tentativeG < gScore[nIdx]) {
-          gScore[nIdx] = tentativeG;
-          parent[nIdx] = current;
-          const h = this.heuristic(neighbor, endCell);
+        if (tentativeG < gScore[nb]) {
+          const isUpdate = gScore[nb] !== 0x3fffffff;
+          gScore[nb] = tentativeG;
+          parent[nb] = curr;
+          const h = manhattan(grid.rowOf(nb), grid.colOf(nb), endR, endC);
           const f = tentativeG + h;
-          minHeap.push({ cell: neighbor, g: tentativeG, h, f });
+          heap.insert(nb, f);
+          eventCount++;
+          if (isUpdate) {
+            yield { t: 'RELAX', cell: nb, g: tentativeG };
+          } else {
+            yield { t: 'ENQUEUE', cell: nb };
+          }
         }
       }
     }
 
-    const path = reached ? reconstructPath(parent, startCell, endCell, grid) : [];
-    for (let i = 0; i < path.length; i++) {
-      steps.push(Step.path(path[i]));
+    const path = [];
+    let cost = 0;
+
+    if (found) {
+      let curr = end;
+      while (curr !== -1) {
+        path.push(curr);
+        curr = parent[curr];
+      }
+      path.reverse();
+
+      for (const cell of path) {
+        eventCount++;
+        yield { t: 'PATH', cell };
+      }
+
+      for (let i = 1; i < path.length; i++) {
+        cost += useWeights ? grid.weightAt(path[i]) : 1;
+      }
     }
 
-    const timeMs = performance.now() - startTime;
-    const cost = this._computeCost(path);
-
-    return new SolveResult({
+    return {
+      solverId: this.id,
+      found,
       path,
-      visitedCount,
-      steps,
-      timeMs,
+      hops: found ? path.length - 1 : 0,
       cost,
-    });
+      expanded,
+      frontierPeak,
+      eventCount,
+    };
   }
 }

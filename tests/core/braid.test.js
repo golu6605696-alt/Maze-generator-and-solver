@@ -1,49 +1,27 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Grid } from '../../src/core/grid.js';
-import { SeededRNG } from '../../src/structures/rng.js';
-import { RecursiveBacktracker } from '../../src/core/generators/backtracker.js';
-import { braidMaze } from '../../src/core/generators/braid.js';
+import { Rng } from '../../src/structures/rng.js';
+import { GENERATORS } from '../../src/core/generators/index.js';
+import { braid } from '../../src/core/braid.js';
+import { validate } from '../../src/core/validate.js';
+import { drain } from '../../src/core/iter.js';
 
-test('braidMaze - reduces dead ends and maintains wall consistency', () => {
-  const grid = new Grid(10, 10);
-  new RecursiveBacktracker().generate(grid, new SeededRNG(123));
+test('Braid - removes dead ends and introduces cycles (T-B1)', () => {
+  const rng = new Rng('braid_test_1');
+  const grid = new Grid(20, 20, true);
+  drain(GENERATORS.bkt.generate(grid, rng));
 
-  // Count dead ends before braid
-  let deadEndsBefore = 0;
-  for (const cell of grid) {
-    if (grid.openNeighbors(cell).length === 1) {
-      deadEndsBefore++;
-    }
-  }
-  assert.ok(deadEndsBefore > 0, 'Initial perfect maze must have dead ends');
+  const beforeVal = validate(grid);
+  assert.equal(beforeVal.loops, 0);
+  assert.ok(beforeVal.deadEnds > 10);
 
-  // Apply full braid mode (rate 1.0)
-  const steps = braidMaze(grid, 1.0, new SeededRNG(456));
-  assert.ok(steps.length > 0, 'Must carve passages to remove dead ends');
+  const res = braid(grid, 50, rng);
+  const afterVal = validate(grid);
 
-  // Count dead ends after braid
-  let deadEndsAfter = 0;
-  for (const cell of grid) {
-    if (grid.openNeighbors(cell).length === 1) {
-      deadEndsAfter++;
-    }
-  }
-
-  assert.ok(
-    deadEndsAfter < deadEndsBefore,
-    `Dead ends should decrease (before: ${deadEndsBefore}, after: ${deadEndsAfter})`
-  );
-
-  // Verify reciprocal wall consistency across all cells
-  for (const cell of grid) {
-    const openNeighbors = grid.openNeighbors(cell);
-    for (const neighbor of openNeighbors) {
-      assert.equal(
-        grid.hasWall(cell, neighbor),
-        false,
-        `Reciprocal wall consistency violation between ${cell} and ${neighbor}`
-      );
-    }
-  }
+  assert.ok(afterVal.deadEnds < beforeVal.deadEnds, 'Dead ends should decrease');
+  assert.ok(afterVal.loops > 0, 'Loops should be created');
+  assert.equal(afterVal.connected, true, 'Grid must remain connected');
+  assert.equal(afterVal.symmetric, true, 'Walls must remain symmetric');
+  assert.ok(res.achievedPct > 0);
 });

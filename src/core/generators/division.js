@@ -1,117 +1,117 @@
 /**
  * @file division.js
- * Recursive Division maze generator.
- * Starts with an open chamber and recursively bisects regions with internal walls,
- * leaving a single passage open per divider to maintain a perfect spanning tree.
- * Uses an explicit stack to prevent call stack overflow on large grids.
- *
- * Complexity: O(V log V) time, O(V) space, where V = rows * cols.
+ * Recursive Division maze generator (iterative with explicit stack).
+ * Complexity: O(V) time, O(R) space. Produces rectilinear corridors with long straight walls.
  */
 
-import { Generator } from './generator.js';
-import { SeededRNG } from '../../structures/rng.js';
 import { Stack } from '../../structures/stack.js';
-import { Step } from '../step.js';
-import { NO_WALLS, WALL_N, WALL_E, WALL_S, WALL_W } from '../cell.js';
+import { Wall } from '../constants.js';
 
-export class RecursiveDivision extends Generator {
+export class DivisionGenerator {
   constructor() {
-    super('Recursive Division');
+    this.id = 'div';
+    this.name = 'Recursive Division';
+    this.complexity = Object.freeze({
+      time: 'O(V)',
+      space: 'O(R)',
+      note: 'Iterative sub-rectangle stack; rectilinear corridors, long straight dividing walls.',
+    });
   }
 
   /**
-   * Generates a perfect maze using iterative recursive division.
-   *
    * @param {import('../grid.js').Grid} grid
-   * @param {import('../../structures/rng.js').SeededRNG} [rng]
-   * @returns {Step[]}
+   * @param {import('../../structures/rng.js').Rng} rng
+   * @param {object} [opts]
+   * @returns {Generator<object, { passages: number, steps: number }, void>}
    */
-  generate(grid, rng = new SeededRNG()) {
-    const steps = [];
+  *generate(grid, rng, opts = {}) {
+    const genRng = rng.fork('gen');
+    const { rows, cols } = grid;
 
-    // 1. Initialize grid with no internal walls, preserving outer perimeter boundaries
-    this._initChamber(grid);
+    // 1. Recursive division starts from an OPEN grid with closed borders
+    // Clear all internal walls
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const i = r * cols + c;
+        let w = 0;
+        if (r === 0) w |= Wall.N;
+        if (r === rows - 1) w |= Wall.S;
+        if (c === 0) w |= Wall.W;
+        if (c === cols - 1) w |= Wall.E;
+        grid.walls[i] = w;
+      }
+    }
 
-    // 2. Iterative sub-chamber processing
     const stack = new Stack();
-    stack.push({ r1: 0, r2: grid.rows - 1, c1: 0, c2: grid.cols - 1 });
+    // Sub-rectangle: { r0, c0, r1, c1 }
+    stack.push({ r0: 0, c0: 0, r1: rows - 1, c1: cols - 1 });
+
+    let steps = 0;
+    let passages = 0;
 
     while (!stack.isEmpty()) {
-      const region = stack.pop();
-      const { r1, r2, c1, c2 } = region;
+      const { r0, c0, r1, c1 } = stack.pop();
+      const height = r1 - r0 + 1;
+      const width = c1 - c0 + 1;
 
-      const width = c2 - c1 + 1;
-      const height = r2 - r1 + 1;
-
-      if (width < 2 || height < 2) {
+      if (height <= 1 || width <= 1) {
         continue;
       }
 
-      // Choose bisecting orientation based on region aspect ratio
-      const horizontal = height > width
-        ? true
-        : width > height
-          ? false
-          : rng.next() < 0.5;
+      // Decide orientation: horizontal (split rows) or vertical (split cols)
+      let horizontal = false;
+      if (height > width) {
+        horizontal = true;
+      } else if (width > height) {
+        horizontal = false;
+      } else {
+        horizontal = genRng.int(2) === 0;
+      }
 
       if (horizontal) {
-        // Horizontal cut: choose row dividing line
-        const cutRow = rng.nextInt(r1, r2 - 1);
-        const passageCol = rng.nextInt(c1, c2);
+        // Choose wall row between r0 and r1 - 1
+        const wallRow = r0 + genRng.int(height - 1);
+        // Choose passage col in [c0, c1]
+        const passageCol = c0 + genRng.int(width);
 
-        // Build wall across the width of this region
-        for (let c = c1; c <= c2; c++) {
+        // Build wall along wallRow between (wallRow, c) and (wallRow + 1, c)
+        for (let c = c0; c <= c1; c++) {
           if (c !== passageCol) {
-            grid.addWall(grid.getCell(cutRow, c), grid.getCell(cutRow + 1, c));
-            steps.push(Step.wallAdded(grid.getCell(cutRow, c), { to: grid.getCell(cutRow + 1, c) }));
-          } else {
-            steps.push(Step.carve(grid.getCell(cutRow + 1, c), { from: grid.getCell(cutRow, c) }));
+            const a = wallRow * cols + c;
+            const b = (wallRow + 1) * cols + c;
+            grid.build(a, b);
+            steps++;
+            yield { t: 'WALL_ADD', a, b };
           }
         }
 
-        // Subdivide upper and lower regions
-        stack.push({ r1, r2: cutRow, c1, c2 });
-        stack.push({ r1: cutRow + 1, r2, c1, c2 });
+        // Push sub-rectangles
+        stack.push({ r0, c0, r1: wallRow, c1 });
+        stack.push({ r0: wallRow + 1, c0, r1, c1 });
       } else {
-        // Vertical cut: choose col dividing line
-        const cutCol = rng.nextInt(c1, c2 - 1);
-        const passageRow = rng.nextInt(r1, r2);
+        // Choose wall col between c0 and c1 - 1
+        const wallCol = c0 + genRng.int(width - 1);
+        // Choose passage row in [r0, r1]
+        const passageRow = r0 + genRng.int(height);
 
-        // Build wall down the height of this region
-        for (let r = r1; r <= r2; r++) {
+        // Build wall along wallCol between (r, wallCol) and (r, wallCol + 1)
+        for (let r = r0; r <= r1; r++) {
           if (r !== passageRow) {
-            grid.addWall(grid.getCell(r, cutCol), grid.getCell(r, cutCol + 1));
-            steps.push(Step.wallAdded(grid.getCell(r, cutCol), { to: grid.getCell(r, cutCol + 1) }));
-          } else {
-            steps.push(Step.carve(grid.getCell(r, cutCol + 1), { from: grid.getCell(r, cutCol) }));
+            const a = r * cols + wallCol;
+            const b = r * cols + (wallCol + 1);
+            grid.build(a, b);
+            steps++;
+            yield { t: 'WALL_ADD', a, b };
           }
         }
 
-        // Subdivide left and right regions
-        stack.push({ r1, r2, c1, c2: cutCol });
-        stack.push({ r1, r2, c1: cutCol + 1, c2 });
+        // Push sub-rectangles
+        stack.push({ r0, c0, r1, c1: wallCol });
+        stack.push({ r0, c0: wallCol + 1, r1, c1 });
       }
     }
 
-    return steps;
-  }
-
-  /**
-   * Resets all internal walls while maintaining outer perimeter boundary walls.
-   *
-   * @param {import('../grid.js').Grid} grid
-   * @private
-   */
-  _initChamber(grid) {
-    grid.resetWalls(NO_WALLS);
-
-    for (let r = 0; r < grid.rows; r++) {
-      grid.getCell(r, 0).addWall(WALL_W);
-      grid.getCell(r, grid.cols - 1).addWall(WALL_E);
-    }
-    for (let c = 0; c < grid.cols; c++) {
-      grid.getCell(0, c).addWall(WALL_N);
-      grid.getCell(grid.rows - 1, c).addWall(WALL_S);
-    }
+    passages = grid.size - 1;
+    return { passages, steps };
   }
 }

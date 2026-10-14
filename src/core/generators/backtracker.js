@@ -1,82 +1,74 @@
 /**
  * @file backtracker.js
- * Iterative Recursive Backtracker (DFS) maze generator.
- * Uses an explicit Stack to prevent call stack overflow on deep paths (e.g. 100x100 grids).
- * Produces mazes with high river factor (long winding passages and few dead ends).
- *
- * Complexity: O(V) time and O(V) space, where V = rows * cols.
+ * Recursive Backtracker maze generator (iterative DFS with explicit stack).
+ * Complexity: O(V) time, O(V) space. Produces mazes with long winding passages.
  */
 
-import { Generator } from './generator.js';
 import { Stack } from '../../structures/stack.js';
-import { SeededRNG } from '../../structures/rng.js';
-import { Step } from '../step.js';
-import { ALL_WALLS } from '../cell.js';
+import { BitSet } from '../../structures/bitset.js';
+import { DIRS } from '../constants.js';
 
-export class RecursiveBacktracker extends Generator {
+export class BacktrackerGenerator {
   constructor() {
-    super('Recursive Backtracker');
+    this.id = 'bkt';
+    this.name = 'Recursive Backtracker';
+    this.complexity = Object.freeze({
+      time: 'O(V)',
+      space: 'O(V)',
+      note: 'Iterative DFS with explicit stack; winding corridors, low branching factor.',
+    });
   }
 
   /**
-   * Generates a perfect maze using iterative depth-first search.
-   *
+   * Generates a maze on grid, yielding events lazily.
    * @param {import('../grid.js').Grid} grid
-   * @param {import('../../structures/rng.js').SeededRNG} [rng]
-   * @returns {Step[]}
+   * @param {import('../../structures/rng.js').Rng} rng
+   * @param {object} [opts]
+   * @returns {Generator<object, { passages: number, steps: number }, void>}
    */
-  generate(grid, rng = new SeededRNG()) {
-    grid.resetWalls(ALL_WALLS);
+  *generate(grid, rng, opts = {}) {
+    const genRng = rng.fork('gen');
+    const V = grid.size;
+    const startCell = opts.start !== undefined ? opts.start : 0;
 
-    const steps = [];
     const stack = new Stack();
-    const visited = new Uint8Array(grid.totalCells);
+    const visited = new BitSet(V);
+    let passages = 0;
+    let steps = 0;
 
-    const start = grid.start;
-    const startIndex = grid.cellIndex(start.row, start.col);
-    visited[startIndex] = 1;
-    stack.push(start);
-    steps.push(Step.visit(start));
+    visited.set(startCell);
+    stack.push(startCell);
+
+    const neighborBuf = new Int32Array(4);
 
     while (!stack.isEmpty()) {
       const current = stack.peek();
-      const unvisitedNeighbors = this._getUnvisitedNeighbors(grid, current, visited);
+      const count = grid.neighbors(current, neighborBuf);
 
-      if (unvisitedNeighbors.length > 0) {
-        const next = rng.choice(unvisitedNeighbors);
-        grid.removeWall(current, next);
+      // Find unvisited neighbors
+      const unvisited = [];
+      for (let i = 0; i < count; i++) {
+        const nb = neighborBuf[i];
+        if (!visited.get(nb)) {
+          unvisited.push(nb);
+        }
+      }
 
-        const nextIndex = grid.cellIndex(next.row, next.col);
-        visited[nextIndex] = 1;
-        stack.push(next);
-        steps.push(Step.carve(next, { from: current }));
+      if (unvisited.length > 0) {
+        const nextCell = unvisited[genRng.int(unvisited.length)];
+        grid.carve(current, nextCell);
+        visited.set(nextCell);
+        stack.push(nextCell);
+        passages++;
+        steps++;
+        yield { t: 'CARVE', from: current, to: nextCell };
       } else {
         stack.pop();
-        steps.push(Step.backtrack(current));
+        steps++;
+        yield { t: 'BACKTRACK', cell: current };
       }
     }
 
-    return steps;
-  }
-
-  /**
-   * Returns orthogonal neighbors that have not yet been carved into.
-   *
-   * @param {import('../grid.js').Grid} grid
-   * @param {import('../cell.js').Cell} cell
-   * @param {Uint8Array} visited
-   * @returns {import('../cell.js').Cell[]}
-   * @private
-   */
-  _getUnvisitedNeighbors(grid, cell, visited) {
-    const result = [];
-    const neighbors = grid.neighbors(cell);
-    for (let i = 0; i < neighbors.length; i++) {
-      const n = neighbors[i];
-      if (visited[grid.cellIndex(n.row, n.col)] === 0) {
-        result.push(n);
-      }
-    }
-    return result;
+    return { passages, steps };
   }
 }

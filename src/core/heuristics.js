@@ -1,33 +1,32 @@
 /**
  * @file heuristics.js
- * Admissible and consistent distance heuristics for grid pathfinding.
- * Used by A* and other informed search algorithms.
- *
- * Complexity: O(1) time and space for all heuristics.
+ * Admissible heuristics for grid pathfinding.
  */
 
+import { MIN_WEIGHT } from './constants.js';
+
 /**
- * Calculates Manhattan (L1 taxicab) distance between two cells: |r1 - r2| + |c1 - c2|.
- * Admissible and consistent for orthogonal (4-directional) grid movement with minimum edge weight >= 1.
- *
- * @param {{row: number, col: number}} a
- * @param {{row: number, col: number}} b
+ * Admissible Manhattan distance scaled by MIN_WEIGHT.
+ * @param {number} r1
+ * @param {number} c1
+ * @param {number} r2
+ * @param {number} c2
  * @returns {number}
  */
-export function manhattanDistance(a, b) {
-  return Math.abs(a.row - b.row) + Math.abs(a.col - b.col);
+export function manhattan(r1, c1, r2, c2) {
+  return MIN_WEIGHT * (Math.abs(r1 - r2) + Math.abs(c1 - c2));
 }
 
 /**
- * Calculates Euclidean (L2 straight-line) distance between two cells: sqrt((r1 - r2)^2 + (c1 - c2)^2).
- * Admissible for unconstrained planar pathfinding.
- *
- * @param {{row: number, col: number}} a
- * @param {{row: number, col: number}} b
+ * Euclidean distance.
+ * @param {number} r1
+ * @param {number} c1
+ * @param {number} r2
+ * @param {number} c2
  * @returns {number}
  */
-export function euclideanDistance(a, b) {
-  const dRow = a.row - b.row;
-  const dCol = a.col - b.col;
-  return Math.hypot(dRow, dCol);
+export function euclidean(r1, c1, r2, c2) {
+  const dr = r1 - r2;
+  const dc = c1 - c2;
+  return Math.sqrt(dr * dr + dc * dc);
 }

@@ -1,115 +1,94 @@
 /**
  * @file prim.js
  * Randomized Prim's maze generator.
- * Builds a spanning tree by repeatedly picking a random cell from the active frontier
- * and connecting it to the already-carved maze.
- * Produces mazes with a high branching factor and many short dead ends.
- *
- * Complexity: O(V) average time, O(V) space, where V = rows * cols.
+ * Complexity: O(V) time, O(V) space. Produces mazes with many short dead ends and a radial feel.
  */
 
-import { Generator } from './generator.js';
-import { SeededRNG } from '../../structures/rng.js';
-import { Step } from '../step.js';
-import { ALL_WALLS } from '../cell.js';
+import { BitSet } from '../../structures/bitset.js';
 
-export class RandomizedPrims extends Generator {
+export class PrimGenerator {
   constructor() {
-    super("Randomized Prim's");
+    this.id = 'prm';
+    this.name = "Randomized Prim's";
+    this.complexity = Object.freeze({
+      time: 'O(V)',
+      space: 'O(V)',
+      note: "Frontier array with swap-remove; high branching factor, short dead ends.",
+    });
   }
 
   /**
-   * Generates a perfect maze using Randomized Prim's algorithm.
-   *
    * @param {import('../grid.js').Grid} grid
-   * @param {import('../../structures/rng.js').SeededRNG} [rng]
-   * @returns {Step[]}
+   * @param {import('../../structures/rng.js').Rng} rng
+   * @param {object} [opts]
+   * @returns {Generator<object, { passages: number, steps: number }, void>}
    */
-  generate(grid, rng = new SeededRNG()) {
-    grid.resetWalls(ALL_WALLS);
+  *generate(grid, rng, opts = {}) {
+    const genRng = rng.fork('gen');
+    const V = grid.size;
+    const startCell = opts.start !== undefined ? opts.start : genRng.int(V);
 
-    const steps = [];
-    const inMaze = new Uint8Array(grid.totalCells);
-    const isFrontier = new Uint8Array(grid.totalCells);
-    const frontier = [];
+    const inTree = new BitSet(V);
+    const inFrontier = new BitSet(V);
+    const frontier = []; // array of cell indices
+    const neighborBuf = new Int32Array(4);
 
-    // Begin with start cell in the maze
-    const start = grid.start;
-    const startIndex = grid.cellIndex(start.row, start.col);
-    inMaze[startIndex] = 1;
-    steps.push(Step.visit(start));
+    let passages = 0;
+    let steps = 0;
 
-    // Seed frontier with neighbors of start
-    this._addNeighborsToFrontier(grid, start, inMaze, isFrontier, frontier, steps);
+    inTree.set(startCell);
+
+    // Add startCell's neighbors to frontier
+    const initialCount = grid.neighbors(startCell, neighborBuf);
+    for (let i = 0; i < initialCount; i++) {
+      const nb = neighborBuf[i];
+      inFrontier.set(nb);
+      frontier.push(nb);
+      steps++;
+      yield { t: 'FRONTIER_ADD', cell: nb };
+    }
 
     while (frontier.length > 0) {
-      // Pick random frontier cell with O(1) swap-and-pop removal
-      const randIdx = rng.nextInt(0, frontier.length - 1);
-      const current = frontier[randIdx];
-      frontier[randIdx] = frontier[frontier.length - 1];
+      // Pick random cell from frontier using swap-remove
+      const fIdx = genRng.int(frontier.length);
+      const cell = frontier[fIdx];
+      // swap-remove
+      frontier[fIdx] = frontier[frontier.length - 1];
       frontier.pop();
+      inFrontier.clear(cell);
 
-      const currIdx = grid.cellIndex(current.row, current.col);
-      isFrontier[currIdx] = 0;
+      // Find all neighbors of cell that are already in the tree
+      const count = grid.neighbors(cell, neighborBuf);
+      const treeNeighbors = [];
+      for (let i = 0; i < count; i++) {
+        const nb = neighborBuf[i];
+        if (inTree.get(nb)) {
+          treeNeighbors.push(nb);
+        }
+      }
 
-      // Connect to an adjacent cell already in the maze
-      const mazeNeighbors = this._getMazeNeighbors(grid, current, inMaze);
-      if (mazeNeighbors.length > 0) {
-        const anchor = rng.choice(mazeNeighbors);
-        grid.removeWall(current, anchor);
-        inMaze[currIdx] = 1;
-        steps.push(Step.carve(current, { from: anchor }));
+      if (treeNeighbors.length > 0) {
+        // Connect to a random in-tree neighbor
+        const chosen = treeNeighbors[genRng.int(treeNeighbors.length)];
+        grid.carve(cell, chosen);
+        inTree.set(cell);
+        passages++;
+        steps++;
+        yield { t: 'CARVE', from: cell, to: chosen };
 
-        // Expand frontier with unvisited neighbors
-        this._addNeighborsToFrontier(grid, current, inMaze, isFrontier, frontier, steps);
+        // Add unvisited neighbors of cell to frontier
+        for (let i = 0; i < count; i++) {
+          const nb = neighborBuf[i];
+          if (!inTree.get(nb) && !inFrontier.get(nb)) {
+            inFrontier.set(nb);
+            frontier.push(nb);
+            steps++;
+            yield { t: 'FRONTIER_ADD', cell: nb };
+          }
+        }
       }
     }
 
-    return steps;
-  }
-
-  /**
-   * Identifies adjacent cells already carved into the maze.
-   *
-   * @param {import('../grid.js').Grid} grid
-   * @param {import('../cell.js').Cell} cell
-   * @param {Uint8Array} inMaze
-   * @returns {import('../cell.js').Cell[]}
-   * @private
-   */
-  _getMazeNeighbors(grid, cell, inMaze) {
-    const result = [];
-    const neighbors = grid.neighbors(cell);
-    for (let i = 0; i < neighbors.length; i++) {
-      const n = neighbors[i];
-      if (inMaze[grid.cellIndex(n.row, n.col)] === 1) {
-        result.push(n);
-      }
-    }
-    return result;
-  }
-
-  /**
-   * Adds eligible adjacent unvisited cells to the frontier list.
-   *
-   * @param {import('../grid.js').Grid} grid
-   * @param {import('../cell.js').Cell} cell
-   * @param {Uint8Array} inMaze
-   * @param {Uint8Array} isFrontier
-   * @param {import('../cell.js').Cell[]} frontier
-   * @param {Step[]} steps
-   * @private
-   */
-  _addNeighborsToFrontier(grid, cell, inMaze, isFrontier, frontier, steps) {
-    const neighbors = grid.neighbors(cell);
-    for (let i = 0; i < neighbors.length; i++) {
-      const n = neighbors[i];
-      const idx = grid.cellIndex(n.row, n.col);
-      if (inMaze[idx] === 0 && isFrontier[idx] === 0) {
-        isFrontier[idx] = 1;
-        frontier.push(n);
-        steps.push(Step.frontier(n));
-      }
-    }
+    return { passages, steps };
   }
 }

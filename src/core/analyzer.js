@@ -1,138 +1,71 @@
 /**
  * @file analyzer.js
- * Comprehensive topological and structural maze analyzer.
- * Calculates dead ends, junctions, longest path (tree diameter),
- * solution distance, branching metrics, and composite difficulty score.
- *
- * Complexity: O(V) time and space using two-pass breadth-first searches.
+ * Structural analysis of mazes: dead ends, junctions, corridor lengths, cyclomatic loops.
  */
 
-import { Queue } from '../structures/queue.js';
-import { BFS } from './solvers/bfs.js';
-import { manhattanDistance } from './heuristics.js';
+import { validate } from './validate.js';
 
-export class MazeAnalyzer {
-  /**
-   * Evaluates metrics and topology for the provided maze grid.
-   *
-   * @param {import('./grid.js').Grid} grid
-   * @returns {{
-   *   totalCells: number,
-   *   deadEnds: number,
-   *   deadEndPct: number,
-   *   junctions: number,
-   *   corridors: number,
-   *   solutionLength: number,
-   *   longestPath: number,
-   *   riverFactor: number,
-   *   difficultyScore: number
-   * }}
-   */
-  static analyze(grid) {
-    if (!grid) throw new TypeError('MazeAnalyzer requires a valid Grid instance');
+/**
+ * Analyzes a grid and returns structural metrics.
+ * @param {import('./grid.js').Grid} grid
+ * @returns {object}
+ */
+export function analyzeMaze(grid) {
+  const val = validate(grid);
+  const V = grid.size;
+  const neighborBuf = new Int32Array(4);
 
-    let deadEnds = 0;
-    let junctions = 0;
-    let corridors = 0;
+  let deadEnds = 0;
+  let straightCorridors = 0;
+  let turns = 0;
+  let junctions3 = 0;
+  let junctions4 = 0;
+  let totalDegree = 0;
 
-    for (const cell of grid) {
-      const openCount = grid.openNeighbors(cell).length;
-      if (openCount === 1) {
-        deadEnds++;
-      } else if (openCount === 2) {
-        corridors++;
-      } else if (openCount >= 3) {
-        junctions++;
+  for (let i = 0; i < V; i++) {
+    const deg = grid.openNeighbors(i, neighborBuf);
+    totalDegree += deg;
+
+    if (deg === 1) {
+      deadEnds++;
+    } else if (deg === 2) {
+      const a = neighborBuf[0];
+      const b = neighborBuf[1];
+      const rA = grid.rowOf(a);
+      const cA = grid.colOf(a);
+      const rB = grid.rowOf(b);
+      const cB = grid.colOf(b);
+      if (rA === rB || cA === cB) {
+        straightCorridors++;
+      } else {
+        turns++;
       }
+    } else if (deg === 3) {
+      junctions3++;
+    } else if (deg === 4) {
+      junctions4++;
     }
-
-    // 1. Solution path metric
-    const bfsResult = new BFS().solve(grid);
-    const solutionLength = bfsResult.pathLength;
-
-    // 2. Longest simple path (tree diameter) via 2-pass BFS
-    const longestPath = MazeAnalyzer._computeDiameter(grid);
-
-    // 3. River factor (windingness ratio = solution length vs straight-line distance)
-    const minDistance = manhattanDistance(grid.start, grid.end) + 1;
-    const windingRatio = solutionLength > 0 ? solutionLength / minDistance : 1;
-    const riverFactor = Math.round(windingRatio * 100) / 100;
-
-    // 4. Composite Difficulty Score (0 to 100)
-    const deadEndDensity = deadEnds / grid.totalCells; // Typically 0.2 to 0.4
-    const lengthScore = Math.min(40, (solutionLength / (grid.totalCells * 0.4)) * 40);
-    const deadEndScore = Math.min(30, (deadEndDensity / 0.35) * 30);
-    const windingScore = Math.min(30, ((riverFactor - 1) / 3) * 30);
-
-    const difficultyScore = Math.max(1, Math.min(100, Math.round(lengthScore + deadEndScore + windingScore)));
-
-    return {
-      totalCells: grid.totalCells,
-      deadEnds,
-      deadEndPct: Math.round((deadEnds / grid.totalCells) * 100),
-      junctions,
-      corridors,
-      solutionLength,
-      longestPath,
-      riverFactor,
-      difficultyScore,
-    };
   }
 
-  /**
-   * Computes the diameter of the maze (longest shortest path between any two cells).
-   *
-   * @param {import('./grid.js').Grid} grid
-   * @returns {number}
-   * @private
-   */
-  static _computeDiameter(grid) {
-    // Pass 1: Find farthest cell from start
-    const { farthestNode } = MazeAnalyzer._bfsFarthest(grid, grid.start);
-    // Pass 2: Find farthest cell from that node
-    const { maxDist } = MazeAnalyzer._bfsFarthest(grid, farthestNode);
-    return maxDist + 1; // Count cells in path
-  }
+  const avgBranchingFactor = V > 0 ? (totalDegree / V) : 0;
+  const deadEndRatio = V > 0 ? (deadEnds / V) : 0;
 
-  /**
-   * Runs BFS from origin cell to find the maximum distance and the farthest reached cell.
-   *
-   * @param {import('./grid.js').Grid} grid
-   * @param {import('./cell.js').Cell} origin
-   * @returns {{farthestNode: import('./cell.js').Cell, maxDist: number}}
-   * @private
-   */
-  static _bfsFarthest(grid, origin) {
-    const queue = new Queue();
-    const dist = new Int32Array(grid.totalCells).fill(-1);
-
-    const originIdx = grid.cellIndex(origin.row, origin.col);
-    dist[originIdx] = 0;
-    queue.enqueue(origin);
-
-    let farthestNode = origin;
-    let maxDist = 0;
-
-    while (!queue.isEmpty()) {
-      const current = queue.dequeue();
-      const currDist = dist[grid.cellIndex(current.row, current.col)];
-
-      if (currDist > maxDist) {
-        maxDist = currDist;
-        farthestNode = current;
-      }
-
-      const neighbors = grid.openNeighbors(current);
-      for (let i = 0; i < neighbors.length; i++) {
-        const neighbor = neighbors[i];
-        const nIdx = grid.cellIndex(neighbor.row, neighbor.col);
-        if (dist[nIdx] === -1) {
-          dist[nIdx] = currDist + 1;
-          queue.enqueue(neighbor);
-        }
-      }
-    }
-
-    return { farthestNode, maxDist };
-  }
+  return {
+    rows: grid.rows,
+    cols: grid.cols,
+    cells: V,
+    openPassages: val.openPassages,
+    isPerfect: val.isPerfect,
+    loops: val.loops,
+    islands: val.islands,
+    connected: val.connected,
+    deadEnds,
+    deadEndRatio: Math.round(deadEndRatio * 1000) / 1000,
+    straightCorridors,
+    turns,
+    junctions3,
+    junctions4,
+    avgBranchingFactor: Math.round(avgBranchingFactor * 100) / 100,
+    solvable: val.solvable,
+  };
 }

@@ -1,97 +1,123 @@
 /**
  * @file dijkstra.js
- * Dijkstra's shortest path algorithm for weighted and unweighted mazes.
- * Uses a binary MinHeap priority queue ordered by cumulative path cost.
- * Guarantees optimal (lowest cost) path on graphs with non-negative edge weights.
- *
- * Complexity: O(V log V) time, O(V) space, where V = rows * cols.
+ * Dijkstra's algorithm for shortest cost pathfinding on weighted graphs.
+ * Complexity: O((V + E) log V) time, O(V) space.
+ * Guarantees optimal (lowest cost) path for non-negative weights.
  */
 
-import { Solver, SolveResult } from './solver.js';
 import { MinHeap } from '../../structures/minheap.js';
-import { Step } from '../step.js';
-import { reconstructPath } from './reconstruct.js';
+import { BitSet } from '../../structures/bitset.js';
 
-export class Dijkstra extends Solver {
+export class DijkstraSolver {
   constructor() {
-    super('Dijkstra');
+    this.id = 'dij';
+    this.name = "Dijkstra's Algorithm";
+    this.complexity = Object.freeze({
+      time: 'O((V + E) log V)',
+      space: 'O(V)',
+      note: 'MinHeap with distance array; guarantees lowest-cost path on weighted grids.',
+    });
+    this.guarantees = Object.freeze({
+      optimalHops: false,
+      optimalCost: true,
+    });
   }
 
   /**
-   * Solves the maze grid finding the minimal-cost path.
-   *
    * @param {import('../grid.js').Grid} grid
-   * @param {import('../cell.js').Cell|[number, number]} [start]
-   * @param {import('../cell.js').Cell|[number, number]} [end]
-   * @returns {SolveResult}
+   * @param {object} [opts]
+   * @returns {Generator<object, import('../types.js').PathResult, void>}
    */
-  solve(grid, start, end) {
-    const startTime = performance.now();
-    const { start: startCell, end: endCell } = this._resolveEndpoints(grid, start, end);
+  *solve(grid, opts = {}) {
+    const V = grid.size;
+    const { start, end } = grid;
+    const heap = new MinHeap();
+    const dist = new Int32Array(V).fill(0x3fffffff); // large positive int sentinel
+    const parent = new Int32Array(V).fill(-1);
+    const settled = new BitSet(V);
+    const neighborBuf = new Int32Array(4);
 
-    const steps = [];
-    const minHeap = new MinHeap((a, b) => a.dist - b.dist);
-    const dist = new Float64Array(grid.totalCells).fill(Infinity);
-    const closed = new Uint8Array(grid.totalCells);
-    const parent = new Array(grid.totalCells).fill(null);
+    let expanded = 0;
+    let frontierPeak = 0;
+    let eventCount = 0;
 
-    const startIdx = grid.cellIndex(startCell.row, startCell.col);
-    dist[startIdx] = 0;
-    minHeap.push({ cell: startCell, dist: 0 });
+    dist[start] = 0;
+    heap.insert(start, 0);
+    frontierPeak = 1;
+    eventCount++;
+    yield { t: 'ENQUEUE', cell: start };
 
-    let visitedCount = 0;
-    let reached = false;
+    let found = false;
+    const useWeights = opts.weighted !== false;
 
-    while (!minHeap.isEmpty()) {
-      const { cell: current, dist: currentDist } = minHeap.pop();
-      const currIdx = grid.cellIndex(current.row, current.col);
+    while (!heap.isEmpty()) {
+      frontierPeak = Math.max(frontierPeak, heap.size);
+      const curr = heap.extractMin();
 
-      // Lazy deletion: ignore outdated priority queue entries
-      if (closed[currIdx] === 1) {
-        continue;
-      }
-      closed[currIdx] = 1;
+      if (settled.get(curr)) continue;
+      settled.set(curr);
+      expanded++;
+      eventCount++;
+      yield { t: 'VISIT', cell: curr, g: dist[curr] };
 
-      steps.push(Step.visit(current));
-      visitedCount++;
-
-      if (current.row === endCell.row && current.col === endCell.col) {
-        reached = true;
+      if (curr === end) {
+        found = true;
         break;
       }
 
-      const neighbors = grid.openNeighbors(current);
-      for (let i = 0; i < neighbors.length; i++) {
-        const neighbor = neighbors[i];
-        const nIdx = grid.cellIndex(neighbor.row, neighbor.col);
+      const count = grid.openNeighbors(curr, neighborBuf);
+      for (let i = 0; i < count; i++) {
+        const nb = neighborBuf[i];
+        if (settled.get(nb)) continue;
 
-        if (closed[nIdx] === 1) {
-          continue;
-        }
+        const weight = useWeights ? grid.weightAt(nb) : 1;
+        const newDist = dist[curr] + weight;
 
-        const altDist = currentDist + neighbor.weight;
-        if (altDist < dist[nIdx]) {
-          dist[nIdx] = altDist;
-          parent[nIdx] = current;
-          minHeap.push({ cell: neighbor, dist: altDist });
+        if (newDist < dist[nb]) {
+          const isUpdate = dist[nb] !== 0x3fffffff;
+          dist[nb] = newDist;
+          parent[nb] = curr;
+          heap.insert(nb, newDist);
+          eventCount++;
+          if (isUpdate) {
+            yield { t: 'RELAX', cell: nb, g: newDist };
+          } else {
+            yield { t: 'ENQUEUE', cell: nb };
+          }
         }
       }
     }
 
-    const path = reached ? reconstructPath(parent, startCell, endCell, grid) : [];
-    for (let i = 0; i < path.length; i++) {
-      steps.push(Step.path(path[i]));
+    const path = [];
+    let cost = 0;
+
+    if (found) {
+      let curr = end;
+      while (curr !== -1) {
+        path.push(curr);
+        curr = parent[curr];
+      }
+      path.reverse();
+
+      for (const cell of path) {
+        eventCount++;
+        yield { t: 'PATH', cell };
+      }
+
+      for (let i = 1; i < path.length; i++) {
+        cost += useWeights ? grid.weightAt(path[i]) : 1;
+      }
     }
 
-    const timeMs = performance.now() - startTime;
-    const cost = this._computeCost(path);
-
-    return new SolveResult({
+    return {
+      solverId: this.id,
+      found,
       path,
-      visitedCount,
-      steps,
-      timeMs,
+      hops: found ? path.length - 1 : 0,
       cost,
-    });
+      expanded,
+      frontierPeak,
+      eventCount,
+    };
   }
 }

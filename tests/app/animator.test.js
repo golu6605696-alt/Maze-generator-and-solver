@@ -1,83 +1,38 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Animator, ANIMATOR_STATES } from '../../src/app/animator.js';
-import { Step } from '../../src/core/step.js';
-import { Cell } from '../../src/core/cell.js';
+import { PlaybackTicker, PlaybackState } from '../../src/app/playback_ticker.js';
 
-test('Animator - initial state is idle with 0 progress', () => {
-  const animator = new Animator();
-  assert.equal(animator.state, ANIMATOR_STATES.IDLE);
-  assert.equal(animator.isRunning, false);
-  assert.equal(animator.isPaused, false);
-  assert.equal(animator.progress, 0);
-});
-
-test('Animator - play empty steps completes immediately', (t, done) => {
-  const animator = new Animator();
-  animator.play([], () => {}, () => {
-    assert.equal(animator.state, ANIMATOR_STATES.COMPLETED);
-    done();
-  });
-});
-
-test('Animator - instant speed (100) processes all steps in one tick', (t, done) => {
-  const animator = new Animator({ speed: 100 });
-  const cells = [new Cell(0, 0), new Cell(0, 1), new Cell(0, 2)];
-  const steps = cells.map((c) => Step.visit(c));
-
+test('PlaybackTicker - starts in STOPPED state and responds to step()', () => {
+  const steps = [1, 2, 3];
+  let doneVal = null;
   const executed = [];
-  animator.play(
-    steps,
-    (step) => executed.push(step),
-    () => {
-      assert.equal(executed.length, 3);
-      assert.equal(animator.progress, 1);
-      assert.equal(animator.state, ANIMATOR_STATES.COMPLETED);
-      done();
-    }
-  );
-});
 
-test('Animator - pause, step, and resume controls', (t, done) => {
-  const animator = new Animator({ speed: 5 }); // Slow speed
-  const cells = [new Cell(0, 0), new Cell(0, 1), new Cell(0, 2), new Cell(0, 3)];
-  const steps = cells.map((c) => Step.visit(c));
-
-  let count = 0;
-  animator.play(steps, () => {
-    count++;
+  const ticker = new PlaybackTicker({
+    getIterator: function* () {
+      for (const s of steps) yield s;
+      return 'FIN';
+    },
+    onStep: (e) => executed.push(e),
+    onDone: (val) => { doneVal = val; },
   });
 
-  // Pause immediately
-  animator.pause();
-  assert.equal(animator.state, ANIMATOR_STATES.PAUSED);
-  assert.equal(animator.isPaused, true);
+  assert.equal(ticker.state, PlaybackState.STOPPED);
 
-  const prevCount = count;
-  // Step manually while paused
-  const stepped = animator.step();
-  assert.equal(stepped, true);
-  assert.equal(count, prevCount + 1);
+  ticker.step();
+  assert.equal(executed.length, 1);
+  assert.equal(executed[0], 1);
+  assert.equal(ticker.state, PlaybackState.PAUSED);
 
-  // Resume to instant finish
-  animator.setSpeed(100);
-  animator.resume();
+  ticker.step();
+  assert.equal(executed.length, 2);
+  assert.equal(executed[1], 2);
 
-  setTimeout(() => {
-    assert.equal(animator.state, ANIMATOR_STATES.COMPLETED);
-    assert.equal(count, 4);
-    done();
-  }, 50);
-});
+  ticker.step();
+  assert.equal(executed.length, 3);
+  assert.equal(executed[2], 3);
 
-test('Animator - cancel resets state and stops further ticks', () => {
-  const animator = new Animator({ speed: 10 });
-  const steps = [Step.visit(new Cell(0, 0)), Step.visit(new Cell(0, 1))];
-
-  animator.play(steps, () => {});
-  animator.cancel();
-
-  assert.equal(animator.state, ANIMATOR_STATES.IDLE);
-  assert.equal(animator.isRunning, false);
-  assert.equal(animator.progress, 0);
+  // Next step completes
+  ticker.step();
+  assert.equal(ticker.state, PlaybackState.DONE);
+  assert.equal(doneVal, 'FIN');
 });

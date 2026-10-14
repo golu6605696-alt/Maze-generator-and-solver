@@ -1,86 +1,77 @@
 /**
  * @file wilson.js
- * Wilson's maze generator using loop-erased random walks.
- * Generates an unbiased Uniform Spanning Tree (UST) of the grid graph.
- *
- * Complexity: O(V) expected time on 2D grids, O(V) space.
+ * Wilson's algorithm for uniform spanning tree maze generation using loop-erased random walks.
+ * Complexity: Expected O(V log V) time, O(V) space. Completely unbiased distribution.
  */
 
-import { Generator } from './generator.js';
-import { SeededRNG } from '../../structures/rng.js';
-import { Step } from '../step.js';
-import { ALL_WALLS } from '../cell.js';
+import { BitSet } from '../../structures/bitset.js';
 
-export class Wilsons extends Generator {
+export class WilsonGenerator {
   constructor() {
-    super("Wilson's (UST)");
+    this.id = 'wil';
+    this.name = "Wilson's Algorithm";
+    this.complexity = Object.freeze({
+      time: 'Expected O(V log V)',
+      space: 'O(V)',
+      note: 'Loop-erased random walk; produces truly uniform spanning trees without bias.',
+    });
   }
 
   /**
-   * Generates an unbiased uniform spanning tree maze using Wilson's algorithm.
-   *
    * @param {import('../grid.js').Grid} grid
-   * @param {import('../../structures/rng.js').SeededRNG} [rng]
-   * @returns {Step[]}
+   * @param {import('../../structures/rng.js').Rng} rng
+   * @param {object} [opts]
+   * @returns {Generator<object, { passages: number, steps: number }, void>}
    */
-  generate(grid, rng = new SeededRNG()) {
-    grid.resetWalls(ALL_WALLS);
+  *generate(grid, rng, opts = {}) {
+    const genRng = rng.fork('gen');
+    const V = grid.size;
+    const inTree = new BitSet(V);
+    const next = new Int32Array(V).fill(-1);
+    const neighborBuf = new Int32Array(4);
 
-    const steps = [];
-    const inTree = new Uint8Array(grid.totalCells);
+    let passages = 0;
+    let steps = 0;
 
-    // 1. Pick an initial root cell to start the maze tree
-    const rootIndex = rng.nextInt(0, grid.totalCells - 1);
-    const root = grid.cellFromIndex(rootIndex);
-    inTree[rootIndex] = 1;
-    steps.push(Step.visit(root));
+    // Pick first cell to add to the tree
+    const root = opts.start !== undefined ? opts.start : genRng.int(V);
+    inTree.set(root);
+    let treeSize = 1;
 
-    let treeCount = 1;
+    for (let i = 0; i < V && treeSize < V; i++) {
+      if (inTree.get(i)) continue;
 
-    // Array of remaining cell indices not yet in the tree
-    const remaining = [];
-    for (let i = 0; i < grid.totalCells; i++) {
-      if (i !== rootIndex) remaining.push(i);
-    }
-    rng.shuffle(remaining);
+      // Start random walk from cell i
+      let curr = i;
+      while (!inTree.get(curr)) {
+        const count = grid.neighbors(curr, neighborBuf);
+        const stepNb = neighborBuf[genRng.int(count)];
 
-    // Next direction pointer for loop-erased random walk: index => neighbor Cell
-    const walkNext = new Array(grid.totalCells).fill(null);
+        if (next[curr] !== -1 && next[curr] !== stepNb) {
+          steps++;
+          yield { t: 'ERASE', cell: curr };
+        }
 
-    // 2. Add remaining cells via loop-erased random walks
-    for (let i = 0; i < remaining.length; i++) {
-      const startIdx = remaining[i];
-      if (inTree[startIdx] === 1) continue;
-
-      let current = grid.cellFromIndex(startIdx);
-      let currIdx = startIdx;
-
-      // Perform random walk until encountering the spanning tree
-      while (inTree[currIdx] === 0) {
-        const neighbors = grid.neighbors(current);
-        const nextCell = rng.choice(neighbors);
-        walkNext[currIdx] = nextCell; // Overwriting automatically erases loops
-
-        current = nextCell;
-        currIdx = grid.cellIndex(current.row, current.col);
+        next[curr] = stepNb;
+        steps++;
+        yield { t: 'WALK', cell: curr };
+        curr = stepNb;
       }
 
-      // 3. Carve the loop-erased path into the spanning tree
-      let walkCell = grid.cellFromIndex(startIdx);
-      let walkIdx = startIdx;
-
-      while (inTree[walkIdx] === 0) {
-        const nextCell = walkNext[walkIdx];
-        grid.removeWall(walkCell, nextCell);
-        inTree[walkIdx] = 1;
-        treeCount++;
-        steps.push(Step.carve(nextCell, { from: walkCell }));
-
-        walkCell = nextCell;
-        walkIdx = grid.cellIndex(walkCell.row, walkCell.col);
+      // Retrace the loop-erased path from i to the tree
+      curr = i;
+      while (!inTree.get(curr)) {
+        const nxt = next[curr];
+        grid.carve(curr, nxt);
+        inTree.set(curr);
+        treeSize++;
+        passages++;
+        steps++;
+        yield { t: 'CARVE', from: curr, to: nxt };
+        curr = nxt;
       }
     }
 
-    return steps;
+    return { passages, steps };
   }
 }

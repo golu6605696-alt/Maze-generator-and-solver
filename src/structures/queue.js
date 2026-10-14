@@ -1,156 +1,104 @@
 /**
-<<<<<<< HEAD
  * @file queue.js
- * Standard FIFO (First-In, First-Out) queue data structure.
- * Implemented with head-offset indexing and periodic compaction to avoid O(N) Array.shift() costs.
- * Complexity: O(1) amortized time for enqueue and dequeue. O(N) space.
+ * FIFO Queue data structure backed by a circular ring buffer with amortized O(1) ops.
+ * Complexity: enqueue O(1) amortized, dequeue O(1), peek O(1), size O(1).
  */
-
-// Threshold to compact the underlying storage array and free dereferenced memory
-const DEFAULT_COMPACTION_THRESHOLD = 1024;
 
 export class Queue {
   /**
-   * Initializes an empty queue.
+   * @param {number} [initialCapacity=64] Must be a power of two or will be rounded up.
    */
-  constructor() {
-    this._items = [];
-=======
- * FIFO (First-In-First-Out) Queue data structure.
- * Uses an offset pointer for amortized O(1) dequeue operations.
- * Time Complexity: O(1) amortized for enqueue, dequeue, peek, isEmpty, size.
- */
-export class Queue {
-  constructor() {
-    /** @private */
-    this._items = [];
-    /** @private */
->>>>>>> d9250ebfae4ef4809ed5d6bb83f70152d6982564
+  constructor(initialCapacity = 64) {
+    let cap = 16;
+    while (cap < initialCapacity) cap <<= 1;
+    this._capacity = cap;
+    this._mask = cap - 1;
+    this._data = new Array(cap);
     this._head = 0;
+    this._tail = 0;
+    this._size = 0;
   }
 
   /**
    * Adds an item to the back of the queue.
-<<<<<<< HEAD
-   * Complexity: O(1) amortized time.
-   *
-=======
->>>>>>> d9250ebfae4ef4809ed5d6bb83f70152d6982564
    * @param {*} item
    */
   enqueue(item) {
-    this._items.push(item);
+    if (this._size === this._capacity) {
+      this._grow();
+    }
+    this._data[this._tail] = item;
+    this._tail = (this._tail + 1) & this._mask;
+    this._size++;
   }
 
   /**
-<<<<<<< HEAD
-   * Removes and returns the item at the front of the queue, or undefined if empty.
-   * Complexity: O(1) amortized time.
-   *
+   * Removes and returns the front item, or undefined if empty.
    * @returns {*}
-=======
-   * Removes and returns the item from the front of the queue.
-   * @returns {*|undefined}
->>>>>>> d9250ebfae4ef4809ed5d6bb83f70152d6982564
    */
   dequeue() {
-    if (this.isEmpty()) {
-      return undefined;
-    }
-    const item = this._items[this._head];
-<<<<<<< HEAD
-    this._items[this._head] = undefined; // Allow garbage collection
-    this._head++;
-
-    // Compact periodically when head pointer exceeds threshold
-    if (this._head >= DEFAULT_COMPACTION_THRESHOLD && this._head * 2 >= this._items.length) {
-=======
-    this._items[this._head] = undefined;
-    this._head++;
-
-    // Compact the array when wasted space exceeds threshold
-    if (this._head > 64 && this._head >= this._items.length / 2) {
->>>>>>> d9250ebfae4ef4809ed5d6bb83f70152d6982564
-      this._items = this._items.slice(this._head);
-      this._head = 0;
-    }
-
+    if (this._size === 0) return undefined;
+    const item = this._data[this._head];
+    this._data[this._head] = undefined; // allow GC
+    this._head = (this._head + 1) & this._mask;
+    this._size--;
     return item;
   }
 
   /**
-<<<<<<< HEAD
-   * Returns the item at the front of the queue without removing it, or undefined if empty.
-   * Complexity: O(1) time.
-   *
+   * Returns front item without removing it.
    * @returns {*}
-=======
-   * Returns the item at the front of the queue without removing it.
-   * @returns {*|undefined}
->>>>>>> d9250ebfae4ef4809ed5d6bb83f70152d6982564
    */
   peek() {
-    if (this.isEmpty()) {
-      return undefined;
-    }
-    return this._items[this._head];
+    if (this._size === 0) return undefined;
+    return this._data[this._head];
   }
 
   /**
-<<<<<<< HEAD
-   * Returns true if the queue has no elements.
-   * Complexity: O(1) time.
-   *
    * @returns {boolean}
    */
   isEmpty() {
-    return this.size === 0;
+    return this._size === 0;
   }
 
   /**
-   * Returns the number of elements currently in the queue.
-   * Complexity: O(1) time.
-   *
-=======
-   * Checks whether the queue contains no elements.
-   * @returns {boolean}
-   */
-  isEmpty() {
-    return this._head >= this._items.length;
-  }
-
-  /**
-   * Returns the number of items in the queue.
->>>>>>> d9250ebfae4ef4809ed5d6bb83f70152d6982564
    * @returns {number}
    */
   get size() {
-    return this._items.length - this._head;
+    return this._size;
   }
 
   /**
-<<<<<<< HEAD
-   * Removes all items from the queue.
-   * Complexity: O(1) time.
-=======
-   * Clears all items from the queue.
->>>>>>> d9250ebfae4ef4809ed5d6bb83f70152d6982564
+   * Resets queue to empty.
    */
   clear() {
-    this._items = [];
+    this._data = new Array(this._capacity);
     this._head = 0;
+    this._tail = 0;
+    this._size = 0;
   }
-<<<<<<< HEAD
+
+  _grow() {
+    const newCap = this._capacity << 1;
+    const newData = new Array(newCap);
+    for (let i = 0; i < this._size; i++) {
+      newData[i] = this._data[(this._head + i) & this._mask];
+    }
+    this._data = newData;
+    this._head = 0;
+    this._tail = this._size;
+    this._capacity = newCap;
+    this._mask = newCap - 1;
+  }
 
   /**
-   * Returns an array of items in FIFO order (front to back).
-   * Complexity: O(N) time and space.
-   *
    * @returns {Array}
    */
   toArray() {
-    return this._items.slice(this._head);
+    const res = new Array(this._size);
+    for (let i = 0; i < this._size; i++) {
+      res[i] = this._data[(this._head + i) & this._mask];
+    }
+    return res;
   }
-=======
->>>>>>> d9250ebfae4ef4809ed5d6bb83f70152d6982564
 }

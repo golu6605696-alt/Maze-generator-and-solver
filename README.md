@@ -1,373 +1,185 @@
-<<<<<<< HEAD
-# 🌀 Maze Generator & Solver
+# 🧭 Maze Quest: Procedural Labyrinths & Algorithm Arena
 
-An interactive, high-performance Data Structures & Algorithms (DSA) laboratory that generates mazes with multiple spanning-tree algorithms, solves them with optimal pathfinding strategies, animates every step in real time, and benchmarks algorithm efficiency on grids up to **100x100 (10,000 cells)**.
-
-Built with **vanilla JavaScript (ESM)**, **HTML5 Canvas**, and **Vanilla CSS** with **zero external runtime or test dependencies**.
+> **An interactive procedural maze exploration game and DSA algorithm laboratory built with pure vanilla JavaScript, HTML5 Canvas, and modern Web APIs. Zero runtime dependencies, zero build steps.**
 
 ---
 
 ## ⚡ Highlights & Key Features
 
-- **5 Maze Generators:** Recursive Backtracker (DFS), Randomized Prim's, Randomized Kruskal's (DSU), Recursive Division, and Wilson's Algorithm (Uniform Spanning Tree).
-- **6 Pathfinding Solvers:** Breadth-First Search (BFS), A* Search (Manhattan heuristic), Dijkstra (Weighted terrain), Depth-First Search (DFS), Wall Follower (Left/Right-hand rule), and Dead-End Filling.
-- **Ultra-Fast Performance:** Generates and solves a 100x100 maze (10,000 cells, ~20,000 wall edges) in **under 35 milliseconds** (PRD budget was < 1,000 ms).
-- **Headless-First Architecture:** Pure algorithmic separation—every algorithm runs headless in Node.js and records a serializable `Step` stream replayed by the animator.
-- **Interactive Tools & Modals:**
-  - 📊 **Compare All Dashboard:** Benchmarks all 6 solvers simultaneously on the same grid.
-  - 🏁 **Race Mode (Head-to-Head Duel):** Pits any two solvers against each other to declare a victor.
-  - 📈 **Topological Analytics:** Calculates composite difficulty score (0-100), dead-end ratio, junction density, corridor count, and tree diameter (two-pass BFS).
-  - ✏️ **Manual Maze Editor:** Toggle walls and passages directly on the canvas via mouse clicks.
-  - 🔀 **Braid Mode:** Removes cul-de-sacs with configurable probability to inject cyclic loops.
-  - 💾 **Save / Load JSON:** Standardized schema for exporting and importing custom labyrinths.
-  - 🏢 **3D Multi-Level Grid Support:** Multi-floor grids with vertical stair transitions and 3D BFS.
-  - 🌓 **Themes & Canvas Scaling:** Dark & Light visual themes with HiDPI / Retina Device Pixel Ratio (DPR) scaling.
+### 1. 🧩 Classic Play & Solve Maze (15×15 Grid)
+- **100% Visible Classic Labyrinth:** Crisp black walls on clean white corridors modeled after classic pen-and-paper maze puzzles. Zero fog, zero darkness, zero stamina limits.
+- **🟢 Entrance & 🔴 Exit:** Green arrow at the top-left entrance (open wall) pointing in; Red arrow at the bottom-right exit pointing out.
+- **Player Navigation:** Walk freely with **Arrow Keys**, **W / A / S / D**, or the on-screen **D-Pad**. Smooth blue trail traces your path as you explore.
+- **Difficulty by Branching Confusion (All 15×15):**
+  - `🟢 EASY`: Clean, straightforward path with 2 choices right at the start and 6–10 simple decision forks. Short dead ends.
+  - `🟡 MEDIUM`: Higher branchiness (~18–24 decision points) with 55+ deeper dead ends and subtle alternate routes to deceive the player.
+  - `🔴 HARD`: Maximum confusion! Dense branching at nearly every corridor (60+ forks), long deceptive paths that travel deep towards the exit, and 15% braiding loops!
+- **Automated Algorithmic Solvers:**
+  - 🌊 **BFS (Breadth-First Search):** Finds the guaranteed shortest path.
+  - 🦔 **DFS (Depth-First Search):** Explores deeply along corridor branches.
+  - 🖐️ **Backtracking (Wall Follower):** Explores systematically and backtracks out of dead ends.
+  - Clicking **`💡 SOLVE MAZE`** automatically reveals and traces the **bold red solution path line** from entrance to exit.
+  - Clicking **`↺ RETRY`** resets your runner back to Start so you can try solving it yourself.
+
+---
+
+### 2. 🗺️ World Quest Map (15-Level Campaign)
+- **5 Themed Worlds & 15 Progressive Stages:**
+  - 🌲 **Whispering Woods:** Gentle beginner pathways (*Sunny Glade, Breezy Hollow, Ancient Oak*).
+  - 🌊 **Sunken Bridges:** Winding wooden planks over clear water (*Plank Pathway, Twin Canals, Harbor Gate*).
+  - 🌾 **Muddy Marshes:** Sticky terrain testing stamina conservation (*Slippery Slough, Willow Bog, Hound Marsh*).
+  - 🏰 **Crumbling Castle:** Collapsing stone passages (*Courtyard Maze, Knight Gallery, Dungeon Vault*).
+  - 🌌 **Starry Labyrinth:** Twilight maze with dim lanterns and 5 robot racers (*Constellation Run, Supernova Spiral, Infinity Core*).
+- **⭐ Star Rating System:** Earn 1 to 3 stars per level based on par times and stamina efficiency.
+- **Client-Side Persistence:** Automatically stores unlocked levels, high scores, and best times in browser `localStorage`.
+
+---
+
+### 3. ⚔️ 2-Player Local Race Duel (Same-Keyboard Multiplayer)
+- **Head-to-Head Competitive Racing:** Two players explore the same labyrinth simultaneously on one computer keyboard:
+  - **Player 1 (Blue Scout):** Controlled with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>.
+  - **Player 2 (Red Scout):** Controlled with Arrow Keys (<kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd>).
+- **Live Match Telemetry:** Centisecond race stopwatch, individual step counts, and relic tallies.
+- **Victory Overlay:** First explorer to touch the golden exit wins with instant rematch and new battle maze generation.
+
+---
+
+### 4. 🧪 Cartographer Lab & Algorithm Studio
+- **5 Spanning Tree Generators:**
+  - **Recursive Backtracker (`bkt`):** Iterative DFS with explicit stack.
+  - **Randomized Prim's (`prm`):** Frontier-set generation.
+  - **Randomized Kruskal's (`krk`):** Edge shuffling with Disjoint-Set Union (DSU).
+  - **Wilson's Algorithm (`wil`):** Loop-erased random walks producing unbiased Uniform Spanning Trees.
+  - **Recursive Division (`div`):** Chamber partitioning with random aperture carving.
+- **5 Pathfinding Solvers:**
+  - **Depth-First Search (`dfs`):** Winding, memory-efficient exploration.
+  - **Breadth-First Search (`bfs`):** Fewest hops guarantee on unweighted edges.
+  - **Dijkstra's Algorithm (`dij`):** MinHeap-driven cost-optimal pathfinding.
+  - **A\* Search (`ast`):** Admissible Manhattan heuristic for directed exploration.
+  - **Wall Follower (`wfl`):** Loop-guarded right-hand rule traversal.
+- **Interactive Map Editing:** Direct canvas wall carving, building, and terrain brushing (Plain, Bridge, Mud, Ruins).
+- **Cartouche & Map Export:** Export high-resolution PNG maps with decorative border, scale bar, legend, and cryptographic fingerprint.
+- **Lockstep Multi-Solver Race:** Benchmark multiple solvers simultaneously on identical maze topology.
+
+---
+
+### 5. ⚡ Performance Benchmark Suite
+- Automated statistical testing measuring:
+  - **Median Execution Speed** and **IQR Variance** across 20x20, 40x40, and 60x60 mazes.
+  - **Expanded Cell Count**, **Path Hops**, and **Total Energy Cost**.
+- One-click export to **CSV** and **JSON** formats.
+
+---
+
+### 6. 🎨 4 Handcrafted Color Themes (Anti-AI Aesthetics)
+Click **`THEME`** in the top navigation or press <kbd>T</kbd> to cycle between:
+1. **Golden Terminal (Default):** Warm amber CRT phosphor glow (`#f59e0b`), deep slate obsidian background (`#070a0f`), and bronze accents.
+2. **Treasure Map (Parchment):** Aged archival parchment (`#f4ecd8`), antique iron-gall ink (`#291a10`), and deep sepia accents.
+3. **Arcade Cyber Neon:** Electric neon cyan (`#00f5ff`) and arcade pink (`#ff007f`) over deep midnight purple (`#0a0818`).
+4. **Emerald Jungle:** Rainforest moss (`#05130e`), glowing jade pathways (`#34d399`), and sunlit amber gems (`#facc15`).
 
 ---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) v18+ (tested on v24 with native `node:test`)
-- Any modern web browser
+- [Node.js](https://nodejs.org/) v18+ (tested on Node v20/v22/v24)
+- Any modern web browser (Chrome, Firefox, Safari, Edge)
 
 ### Running Locally
-Start the zero-dependency local static server:
 ```bash
 npm start
 ```
 Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 
 ### Running Test Suite
-Execute the 114 automated headless tests:
+Execute the 91 automated unit and property tests with Node's native test runner:
 ```bash
 npm test
 ```
 
-### Running 100x100 Performance Benchmarks
-Run the CLI benchmark suite to measure execution times on 10,000-cell grids:
-```bash
-npm run bench
-```
-
 ---
 
-## ⏱️ 100x100 (10,000 Cells) Performance Benchmarks
+## ⌨️ Controls & Keybindings
 
-The project requirements specified that all algorithms must execute on a **100x100 grid (10,000 cells)** in **under 1.0 second (1,000 ms)**. Our custom iterative implementations exceed this threshold by **30x to 350x**:
-
-### Generation Benchmarks (100x100)
-| Algorithm | Key Data Structure | Passages Carved | Total Reachable | Measured Time | PRD Budget |
-|---|---|---|---|---|---|
-| **Recursive Backtracker** | Explicit LIFO Stack | 9,999 (V - 1) | 10,000 (100%) | **~8.96 ms** | < 1,000 ms |
-| **Randomized Prim's** | O(1) Swap-and-Pop Frontier | 9,999 (V - 1) | 10,000 (100%) | **~8.01 ms** | < 1,000 ms |
-| **Randomized Kruskal's** | Disjoint Set Union (DSU) | 9,999 (V - 1) | 10,000 (100%) | **~8.45 ms** | < 1,000 ms |
-| **Recursive Division** | Chamber Partitioning | 9,999 (V - 1) | 10,000 (100%) | **~3.34 ms** | < 1,000 ms |
-| **Wilson's (UST)** | Loop-Erased Random Walk | 9,999 (V - 1) | 10,000 (100%) | **~9.60 ms** | < 1,000 ms |
-
-### Solver Benchmarks (100x100 Perfect Maze)
-| Solver | Key Data Structure | Optimality | Cells Visited | Measured Time | PRD Budget |
-|---|---|---|---|---|---|
-| **A* (Manhattan)** | MinHeap ($f = g + h$) | **Optimal** | ~9,629 | **~4.19 ms** | < 1,000 ms |
-| **BFS** | Offset-Compacted Queue | **Optimal** | ~9,809 | **~5.32 ms** | < 1,000 ms |
-| **Dijkstra** | MinHeap (Cost) | **Optimal** | ~9,811 | **~7.20 ms** | < 1,000 ms |
-| **DFS** | Explicit LIFO Stack | Sub-optimal | ~6,503 | **~2.78 ms** | < 1,000 ms |
-| **Wall Follower** | State Cycle Tracker | Sub-optimal | ~7,398 | **~12.11 ms** | < 1,000 ms |
-| **Dead-End Filling** | Inward Degree-1 Cascade | **Optimal** | ~6,103 | **~31.74 ms** | < 1,000 ms |
-
----
-
-## 🧠 Core Data Structures
-
-All data structures are custom built in [`src/structures/`](file:///c:/Users/Lenovo/Desktop/maze-docs/src/structures/):
-
-1. **`Stack`:** Array-backed explicit LIFO stack that avoids JavaScript recursion call-stack limits on deep traversals.
-2. **`Queue`:** FIFO queue using head-pointer offsets and periodic compaction, eliminating the $O(N)$ penalty of `Array.shift()`.
-3. **`MinHeap`:** Binary min-heap supporting arbitrary elements and custom comparison lambdas in $O(\log N)$ push/pop time.
-4. **`DisjointSetUnion (DSU)`:** Iterative union-find data structure with full **path compression** and **union by rank**, operating in near-constant $O(\alpha(V))$ amortized time.
-5. **`SeededRNG`:** Deterministic 32-bit PRNG powered by **Mulberry32** and **FNV-1a** string hashing, ensuring identical maze generation across platforms given the same seed.
-
----
-
-## 🏗️ Architecture & Design Principles
-=======
-# 🧭 Maze Generator & Solver
-
-An interactive, zero-dependency visualizer and benchmarking suite demonstrating core **Data Structures and Algorithms (DSA)** through maze generation and pathfinding.
-
-Built with **pure JavaScript (ES Modules)**, **HTML5 Canvas**, and the native **Node.js test runner**.
-
----
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Key Features](#key-features)
-- [Architecture & Design Principles](#architecture--design-principles)
-- [Algorithms & Data Structures](#algorithms--data-structures)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-- [Project Roadmap & Status](#project-roadmap--status)
-- [Development Rules & Conventions](#development-rules--conventions)
-- [Documentation Index](#documentation-index)
-- [License](#license)
-
----
-
-## Overview
-
-The primary goal of this project is to turn abstract computer science concepts—spanning graph theory, disjoint-set forests, tree generation, and priority queues—into tangible, real-time visual experiences.
-
-Every algorithm runs **headlessly** and outputs discrete step records. The rendering engine replays these steps smoothly onto an HTML5 Canvas, allowing users to watch algorithms think, explore, backtrack, and optimize.
-
-### Core Highlights
-- **Zero Runtime Dependencies**: Pure vanilla JavaScript with native web platform standards.
-- **Headless-First Design**: Algorithms have zero coupling to DOM or Canvas, making them 100% unit-testable.
-- **Event-Driven Step Recording**: Algorithms record their exploration state into immutable `Step` streams that can be paused, stepped forward, or benchmarked instantly.
-- **Deterministic Seeded RNG**: Custom 32-bit PRNG (Mulberry32) ensures reproducible maze generation across runs.
-
----
-
-## Architecture & Design Principles
-
-The application strictly enforces a four-tier decoupled architecture:
->>>>>>> d9250ebfae4ef4809ed5d6bb83f70152d6982564
-
-```
-+-------------------------------------------------------------+
-|                          UI Layer                           |
-<<<<<<< HEAD
-|       ControlsPanel | CanvasRenderer | StatsPanel           |
-=======
-|       Controls Panel  |  Canvas Renderer  |  Stats Panel     |
->>>>>>> d9250ebfae4ef4809ed5d6bb83f70152d6982564
-+------------------------------+------------------------------+
-                               |
-+------------------------------v------------------------------+
-|                      Application Layer                      |
-<<<<<<< HEAD
-|         Controller | Animator | BenchmarkRunner | MazeIO    |
-=======
-|    Controller  |  Animator (Step Player)  |  BenchmarkRunner  |
->>>>>>> d9250ebfae4ef4809ed5d6bb83f70152d6982564
-+------------------------------+------------------------------+
-                               |
-+------------------------------v------------------------------+
-|                         Core Layer                          |
-<<<<<<< HEAD
-|         Grid / Cell | Generators | Solvers | Analyzer       |
-+------------------------------+------------------------------+
-                               |
-+------------------------------v------------------------------+
-|                       Data Structures                       |
-|         Stack | Queue | MinHeap | DSU | SeededRNG           |
-+-------------------------------------------------------------+
-```
-
-1. **Decoupled Logic & UI:** Algorithms know nothing about DOM or Canvas. They return a list of `Step` events (`CARVE`, `VISIT`, `FRONTIER`, `BACKTRACK`, `PATH`).
-2. **Bitmask Cell Storage:** Each Cell stores its 4 orthogonal walls in a 4-bit bitmask (`N=1, E=2, S=4, W=8`). Wall operations are $O(1)$ bitwise operations.
-3. **Bidirectional Consistency:** Grid methods `removeWall(a, b)` and `addWall(a, b)` synchronously update both adjoining cells.
-4. **Zero Shared Visited State:** Visited status lives strictly in algorithm-local maps, preventing state contamination across successive runs.
-
----
-
-## ⌨️ Keyboard Shortcuts & Controls
-
-| Shortcut | Action |
+### Navigation (Solo Expedition)
+| Input | Action |
 |---|---|
-| <kbd>Space</kbd> | Pause / Resume active animation |
-| <kbd>→</kbd> (Right Arrow) | Advance animation by single step (when paused) |
-| <kbd>R</kbd> | Reset grid and cancel animation |
-| Mouse Left Click | Carve/toggle wall in **Edit Mode** |
-| Mouse Right Click | Toggle start/end placement in **Edit Mode** |
+| <kbd>W</kbd> / <kbd>↑</kbd> | Move North |
+| <kbd>D</kbd> / <kbd>→</kbd> | Move East |
+| <kbd>S</kbd> / <kbd>↓</kbd> | Move South |
+| <kbd>A</kbd> / <kbd>←</kbd> | Move West |
+| On-Screen D-Pad | Touch controls for mobile / tablet |
+| <kbd>T</kbd> | Cycle Color Theme |
+
+### 2-Player Race Duel
+| Player | Controls |
+|---|---|
+| **Player 1 (Blue Scout)** | <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> |
+| **Player 2 (Red Scout)** | <kbd>↑</kbd> <kbd>←</kbd> <kbd>↓</kbd> <kbd>→</kbd> (Arrow Keys) |
+
+### Playback & Studio (Lab Mode)
+| Input | Action |
+|---|---|
+| <kbd>Space</kbd> | Start / Pause playback |
+| <kbd>→</kbd> / <kbd>Period</kbd> | Advance 1 step |
+| <kbd>←</kbd> / <kbd>Comma</kbd> | Step backward |
+| <kbd>Esc</kbd> | Cancel / Reset playback |
+| Detent Dial | Adjust speed: `1x`, `2x`, `5x`, `10x`, `30x`, `100x`, `MAX` |
 
 ---
 
-## 📂 Project Structure
+## 🏗️ Project Architecture
 
 ```
-maze-generator-and-solver/
+Maze/
 ├── src/
-│   ├── app/                 # Controller, Animator, BenchmarkRunner, MazeIO
-│   ├── core/
-│   │   ├── cell.js          # Bitmask wall representation & weights
-│   │   ├── grid.js          # 2D Grid with orthogonal neighbor topology
-│   │   ├── grid3d.js        # Multi-level 3D grid with vertical transitions
-│   │   ├── analyzer.js      # Topological metric & tree diameter calculations
-│   │   ├── heuristics.js    # Manhattan & Euclidean heuristics
-│   │   ├── generators/      # Backtracker, Prim, Kruskal, Division, Wilson, Braid
-│   │   └── solvers/         # BFS, A*, Dijkstra, DFS, WallFollower, DeadEnd
-│   ├── structures/          # Stack, Queue, MinHeap, DSU, SeededRNG
-│   ├── ui/                  # CanvasRenderer, ControlsPanel, StatsPanel
-│   └── main.js              # Application entry point
-├── tests/                   # 114 native tests (node:test)
-├── scripts/
-│   └── benchmark_100x100.js # CLI 100x100 performance benchmark
-├── docs/
-│   ├── PRD_REVIEW.md        # Detailed requirements audit against PRD
-│   └── DEMO.md              # Live demonstration script & presentation guide
-├── index.html               # Main visualizer interface
-├── index.css                # Polished dark/light responsive styles
-├── server.js                # Zero-dependency local Node server
-└── package.json
-=======
-|    Grid / Cell  |  Generators  |  Solvers  |  Heuristics    |
-+------------------------------+------------------------------+
-                               |
-+------------------------------v------------------------------+
-|                       Utilities / DSA                       |
-|   SeededRNG  |  Stack  |  Queue  |  MinHeap  |  DisjointSet |
-+-------------------------------------------------------------+
-```
-
-### 1. Separation of Concerns
-Algorithms operate purely on logical `Grid` and `Cell` abstractions. They do not manipulate DOM elements, invoke `requestAnimationFrame`, or alter visual canvas states.
-
-### 2. "Record, Then Replay"
-Generators and Solvers emit a stream of discrete `Step` events:
-```javascript
-// Event structure
-{
-  type: 'CARVE' | 'VISIT' | 'FRONTIER' | 'BACKTRACK' | 'PATH' | 'WALL_ADDED',
-  cell: { row, col },
-  extra: {}
-}
-```
-The application animator consumes and steps through this stream at configurable playback speeds (from 1 step/second to instantaneous completion).
-
-### 3. Bitmask Cell Representation
-Each cell encapsulates its 4-directional walls (`N=1`, `E=2`, `S=4`, `W=8`) in an efficient single-byte bitmask (`15` = all walls intact). Wall mutations are symmetrically synchronized between adjacent neighbors.
-
-### 4. Non-Contaminating State
-Solver states (e.g., `visited`, `distance`, `parent`) are encapsulated in local structures per run, leaving the shared `Cell` and `Grid` instances clean for subsequent solver comparisons.
-
----
-
-## Algorithms & Data Structures
-
-| Algorithm | Category | Primary Data Structure | Time Complexity | Optimality Guarantee |
-|---|---|---|---|---|
-| **Recursive Backtracker** | Generator | `Stack` (LIFO) | $O(V)$ | Perfect Maze (Spanning Tree) |
-| **Randomized Prim's** | Generator | Frontier Array / List | $O(V)$ avg | Perfect Maze (Spanning Tree) |
-| **Randomized Kruskal's** | Generator | `DisjointSet` (DSU) + Edge List | $O(E \cdot \alpha(V))$ | Perfect Maze (Spanning Tree) |
-| **Recursive Division** | Generator | Recursive Subgrids | $O(V \log V)$ | Perfect Maze |
-| **Breadth-First Search (BFS)** | Solver | `Queue` (FIFO) | $O(V)$ | Guaranteed Shortest Path |
-| **Depth-First Search (DFS)** | Solver | `Stack` (LIFO) | $O(V)$ | Non-optimal (Exploratory) |
-| **A\* Search** | Solver | `MinHeap` (Priority Queue) | $O(V \log V)$ | Guaranteed Shortest (Admissible $h$) |
-| **Dijkstra's Algorithm** | Solver | `MinHeap` (Priority Queue) | $O(V \log V)$ | Guaranteed Shortest (Weighted) |
-
----
-
-## Project Structure
-
-```
-Maze-generator-and-solver/
-├── docs/                     # Comprehensive architecture and planning specifications
-│   ├── ARCHITECTURE.md       # High-level architecture, data models, and system flows
-│   ├── DESIGN.md             # UI/UX specifications, layouts, colors, and accessibility
-│   ├── MEMORY.md             # Project decisions log, design rationales, and glossary
-│   ├── PRD.md                # Product requirements, user stories, and MoSCoW scoping
-│   ├── README.md             # Documentation directory index
-│   ├── RULES.md              # Engineering standards, coding conventions, and rules
-│   └── TASK.md               # Phase-by-phase implementation roadmap and checklist
-├── src/
-│   ├── app/                  # Application controller, animator, and benchmarking
-│   ├── core/                 # Core domain logic
-│   │   ├── cell.js           # Cell representation and bitmask walls
-│   │   ├── grid.js           # 2D Grid topology and neighborhood queries
-│   │   ├── generators/       # Maze generation algorithms (DFS, Prim's, Kruskal's)
-│   │   ├── solvers/          # Pathfinding solvers (BFS, DFS, A*, Dijkstra)
-│   │   └── heuristics/       # Heuristic distance functions (Manhattan, Euclidean)
-│   ├── structures/           # Core Data Structure implementations
-│   │   ├── dsu.js            # Disjoint Set Union (Path compression + Union by rank)
-│   │   ├── min_heap.js       # Binary Min-Heap / Priority Queue with custom comparator
-│   │   ├── queue.js          # Amortized O(1) Queue with head pointer and compaction
-│   │   ├── rng.js            # Mulberry32 32-bit Seeded Random Number Generator
-│   │   ├── stack.js          # Stack implementation (LIFO)
-│   │   └── index.js          # Public structures barrel export
-│   └── ui/                   # HTML5 Canvas renderer, controls, and stats dashboard
-├── tests/                    # Headless automated test suite
-│   ├── core/                 # Tests for Grid, Generators, and Solvers
-│   ├── structures/           # Unit tests for core data structures
-│   └── smoke.test.js         # Environment and test runner smoke test
-├── package.json              # Project metadata, ES module config, and scripts
-└── README.md                 # Project README
->>>>>>> d9250ebfae4ef4809ed5d6bb83f70152d6982564
+│   ├── structures/           # Core Data Structures
+│   │   ├── rng.js            # xmur3 + sfc32 deterministic PRNG with stream forking
+│   │   ├── stack.js          # Explicit LIFO Stack (zero call-stack limits)
+│   │   ├── queue.js          # Ring-buffer FIFO Queue (O(1) amortized ops)
+│   │   ├── minheap.js        # Binary MinHeap with (priority, seq, value) tie-breaking
+│   │   ├── dsu.js            # Disjoint-Set Union with path compression & union by rank
+│   │   └── bitset.js         # Compact bitset on Uint32Array
+│   ├── core/                 # Pure Graph Engine
+│   │   ├── constants.js      # Walls, Terrain, Difficulties, Relics, Phantoms, Fog
+│   │   ├── grid.js           # Uint8Array-backed Grid with symmetric wall bits
+│   │   ├── code.js           # Expedition Code parser & formatter (v1/...)
+│   │   ├── braid.js          # Dead-end braiding algorithm
+│   │   ├── terrain.js        # Noise terrain & elevation assignment
+│   │   ├── relics.js         # Dead-end relic placement off reference path
+│   │   ├── fog.js            # Supercover line-of-sight ray-walk
+│   │   ├── scoring.js        # Scoring formula & grade determination
+│   │   ├── phantoms.js       # Headless finishes & timelines for phantoms
+│   │   ├── analyzer.js       # Topological metrics & tree analysis
+│   │   ├── pipeline.js       # Canonical buildMaze pipeline
+│   │   ├── generators/       # Backtracker, Prim, Kruskal, Wilson, Division
+│   │   └── solvers/          # DFS, BFS, Dijkstra, A*, WallFollower
+│   ├── app/                  # Application State & Orchestration
+│   │   ├── app_machine.js    # Finite state machine (Landing, Campaign, Duel, Solo, Lab, Bench)
+│   │   ├── campaign_store.js # 5-world 15-level quest store with star ratings & localStorage
+│   │   ├── duel_controller.js# Real-time 2-player local keyboard race engine
+│   │   ├── expedition_controller.js # Game engine: stamina, fog, movement, relics
+│   │   ├── lab_controller.js # Studio controller: lockstep racing, live editing
+│   │   ├── playback_ticker.js# Frame-budgeted animation ticker with speed detents
+│   │   ├── event_log.js      # Bidirectional event scrubbing ledger
+│   │   ├── run_verifier.js   # Anti-cheat move verification via replay
+│   │   ├── maze_io.js        # Schema v2 JSON import/export
+│   │   └── benchmark_runner.js # Statistical benchmarking (median, IQR)
+│   ├── ui/                   # Rendering & Web Presentation
+│   │   ├── theme.js          # 4 Handcrafted Themes (Terminal, Parchment, Cyber, Jungle)
+│   │   ├── audio.js          # Web Audio API sound synthesizer
+│   │   ├── components/       # Custom web components (<mech-toggle>, <detent-dial>, etc.)
+│   │   └── renderer/         # Canvas renderer: L0-L3 layers, patterns, duel racers, cartouche
+│   └── main.js               # Application bootstrap & multi-event loader
+├── tests/                    # 91 automated tests run via `node --test`
+├── docs/                     # Specifications, Rules, and Architecture docs
+├── index.html                # Responsive web interface
+├── index.css                 # Zero-dependency bespoke styling
+└── server.js                 # Zero-dependency static server with cache-busting
 ```
 
 ---
 
-<<<<<<< HEAD
-## 📄 License
-
-MIT License. Designed for computer science education, algorithm analysis, and software engineering portfolios.
-=======
-## Getting Started
-
-### Prerequisites
-- **Node.js**: v18+ (Node.js 20+ or 24 recommended, which includes native `node:test` support).
-- **Web Browser**: Any modern browser supporting ES Modules and HTML5 Canvas.
-
-### Running the Test Suite
-The project uses the built-in Node.js native test runner (`node --test`), requiring zero external dependencies:
-
-```bash
-npm test
-```
-
-### Running the Web Application
-Because the application is built using standard ES Modules and Vanilla CSS:
-1. Start any local static file server from the root directory:
-   ```bash
-   # Using Python 3
-   python -m http.server 3000
-
-   # Or using npx serve
-   npx serve .
-   ```
-2. Open `http://localhost:3000` in your web browser.
-
----
-
-## 🗺 Project Roadmap & Status
-
-| Phase | Milestone | Focus Area | Status |
-|:---:|:---|:---|:---:|
-| **Phase 0** | **Setup** | Architecture design, test runner configuration, repository setup | ✅ Complete |
-| **Phase 1** | **Data Structures** | Stack, Queue, MinHeap, DSU, SeededRNG + Comprehensive Unit Tests | ✅ Complete |
-| **Phase 2** | **Core Grid** | Bitmask Cell, Grid connectivity, Step event recording | 🔄 Next Up |
-| **Phase 3** | **Generators (MVP)** | Recursive Backtracker, Prim's, and Kruskal's maze generation | ⏳ Planned |
-| **Phase 4** | **Solvers (MVP)** | BFS, DFS, and A* Search pathfinding | ⏳ Planned |
-| **Phase 5** | **Visualization (MVP)**| Canvas Renderer, Step-by-step Animator, Controls Panel, Stats | ⏳ Planned |
-| **Phase 6** | **Advanced Features** | Dijkstra, Compare All dashboard, Maze editor, JSON save/load | ⏳ Planned |
-| **Phase 7** | **Stretch Goals** | Recursive Division, Wilson's, Race mode, Maze analytics | ⏳ Planned |
-| **Phase 8** | **Polish & Review** | 100x100 benchmark verification, final documentation, demo | ⏳ Planned |
-
----
-
-## Development Rules & Conventions
-
-- **Headless First**: Every algorithm and data structure must run and pass tests in headless Node.js without any DOM or Canvas mocks.
-- **Iterative Implementations**: Prefer iterative implementations over deep recursion for graph traversals to avoid stack overflow on large grids (e.g. 100x100 = 10,000 cells).
-- **Reproducible Seeds**: Randomness must always flow through an injected `SeededRNG` instance, never `Math.random()`.
-- **Pure ES Modules**: Always use explicit `.js` extensions in imports.
-- **Verification Before Claims**: Tests must always be run and verified before claiming task completion.
-
----
-
-## Documentation Index
-
-For in-depth specifications and design records, refer to the documents in [`docs/`](file:///docs):
-- [`PRD.md`](file:///docs/PRD.md) - Product requirements, MoSCoW prioritization, and user stories.
-- [`ARCHITECTURE.md`](file:///docs/ARCHITECTURE.md) - Layer definitions, interfaces, data models, and persistence formats.
-- [`DESIGN.md`](file:///docs/DESIGN.md) - Wireframes, interaction patterns, accessibility, and color palette.
-- [`TASK.md`](file:///docs/TASK.md) - Active task tracking, phase checklists, and immediate priorities.
-- [`RULES.md`](file:///docs/RULES.md) - Project standards, coding constraints, and solver invariants.
-- [`MEMORY.md`](file:///docs/MEMORY.md) - Architecture decision records (ADRs), glossary, and technical log.
-
----
-
-## License
-
-This project is licensed under the [MIT License](LICENSE).
->>>>>>> d9250ebfae4ef4809ed5d6bb83f70152d6982564
+## 📜 License
+MIT License.

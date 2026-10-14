@@ -3,8 +3,11 @@
  * Barrel export for application layer.
  */
 
-export { Animator, ANIMATOR_STATES } from './animator.js';
-export { Controller, CONTROLLER_STATES } from './controller.js';
-export { BenchmarkRunner } from './benchmark.js';
-export { MazeIO } from './maze_io.js';
-
+export { AppMachine, ScreenState } from './app_machine.js';
+export { ExpeditionController, ExpeditionState } from './expedition_controller.js';
+export { LabController } from './lab_controller.js';
+export { PlaybackTicker, PlaybackState } from './playback_ticker.js';
+export { EventLog } from './event_log.js';
+export { verifyRun } from './run_verifier.js';
+export { exportMazeJson, importMazeJson, exportRunJson, importRunJson } from './maze_io.js';
+export { runBenchmark } from './benchmark_runner.js';
