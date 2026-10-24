@@ -196,7 +196,14 @@ function initApp() {
 
       setTimeout(() => {
         app.transition(AppScreen.EXPEDITION_PLAY);
-        startSimpleMaze(simpleDifficulty);
+        if (!simpleGrid) {
+          startSimpleMaze(simpleDifficulty);
+        } else {
+          requestAnimationFrame(() => {
+            expRenderer.resize();
+            expRenderer.render();
+          });
+        }
         overlay.classList.add('fade-out');
         setTimeout(() => {
           overlay.classList.remove('active', 'fade-out');
@@ -205,7 +212,14 @@ function initApp() {
       }, 650);
     } else {
       app.transition(AppScreen.EXPEDITION_PLAY);
-      startSimpleMaze(simpleDifficulty);
+      if (!simpleGrid) {
+        startSimpleMaze(simpleDifficulty);
+      } else {
+        requestAnimationFrame(() => {
+          expRenderer.resize();
+          expRenderer.render();
+        });
+      }
     }
   }
 
