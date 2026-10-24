@@ -103,7 +103,7 @@ export class DetentDial extends HTMLElement {
     if (readout) {
       readout.textContent = `SPEED: ${this._labels[this._index]}`;
     }
-    const marks = this.shadowRoot.querySelectorAll('.mark');
+    const marks = this.shadowRoot.querySelectorAll('.notch');
     marks.forEach((m, i) => {
       if (i === this._index) m.classList.add('active');
       else m.classList.remove('active');

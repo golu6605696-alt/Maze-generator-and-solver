@@ -14,6 +14,7 @@ import { braid } from '../core/braid.js';
 import { assignTerrain } from '../core/terrain.js';
 import { PlaybackTicker, PlaybackState } from './playback_ticker.js';
 import { EventLog } from './event_log.js';
+import { drain } from '../core/iter.js';
 
 export class LabController {
   /**
@@ -37,6 +38,10 @@ export class LabController {
     this.heatMode = 'order'; // 'order' | 'frequency'
 
     this.grid = new Grid(this.rows, this.cols, true);
+    const rng = new Rng(this.seed);
+    const gen = getGenerator(this.generatorId);
+    drain(gen.generate(this.grid, rng));
+
     this.eventLog = new EventLog();
     this.validation = validate(this.grid);
 
@@ -50,8 +55,6 @@ export class LabController {
       onDone: (result) => this._handleDone(result),
       onStateChange: () => this._notify(),
     });
-
-    this.generate();
   }
 
   get code() {

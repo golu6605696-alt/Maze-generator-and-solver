@@ -1,35 +1,27 @@
 /**
  * @file main.js
  * Main entry point for Maze Explorer Quest.
- * Wires AppMachine, ExpeditionController, DuelController, LabController, CampaignStore, Renderers, and UI components.
+ * Wires AppMachine, ExpeditionController, CampaignStore, ClassicMazeRenderer, and UI components.
  */
 
 import { AppMachine, AppScreen } from './app/app_machine.js';
 import { ExpeditionController, ExpeditionState } from './app/expedition_controller.js';
-import { LabController } from './app/lab_controller.js';
-import { DuelController, DuelState } from './app/duel_controller.js';
 import { campaignStore, CAMPAIGN_WORLDS } from './app/campaign_store.js';
-import { CanvasRenderer } from './ui/renderer/canvas_renderer.js';
 import { ClassicMazeRenderer } from './ui/renderer/classic_renderer.js';
 import { setTheme, cycleTheme, getStoredTheme, THEME_SPECS } from './ui/theme.js';
 import { sound } from './ui/audio.js';
+import { MazeBgAnimator } from './ui/maze_bg_animator.js';
 import { formatCode, parseCode, randomSeed } from './core/code.js';
 import { DIFFICULTIES, RelicKind, Wall } from './core/constants.js';
 import { verifyRun } from './app/run_verifier.js';
-import { exportMazeJson, importMazeJson, exportRunJson } from './app/maze_io.js';
-import { runBenchmark } from './app/benchmark_runner.js';
+import { exportRunJson } from './app/maze_io.js';
 import { Grid } from './core/grid.js';
 import { Rng } from './structures/rng.js';
 import { getGenerator } from './core/generators/index.js';
 import { getSolver } from './core/solvers/index.js';
 import { drain } from './core/iter.js';
 import { braid } from './core/braid.js';
-
-// Import Custom Elements
-import './ui/components/mech_toggle.js';
-import './ui/components/detent_dial.js';
-import './ui/components/transport_bar.js';
-import './ui/components/coord_readout.js';
+import { buildMaze } from './core/pipeline.js';
 
 let isAppInitialized = false;
 
@@ -44,27 +36,25 @@ function initApp() {
 
   // Canvases & Renderers
   const expCanvas = document.getElementById('canvas-expedition');
-  const labCanvas = document.getElementById('canvas-lab');
-  const duelCanvas = document.getElementById('canvas-duel');
-
   const expRenderer = new ClassicMazeRenderer(expCanvas);
-  const labRenderer = new CanvasRenderer(labCanvas);
-  const duelRenderer = new CanvasRenderer(duelCanvas);
 
   function applyThemeToRenderers(theme) {
     expRenderer.setTheme(theme);
-    labRenderer.setTheme(theme);
-    duelRenderer.setTheme(theme);
   }
   applyThemeToRenderers(currentTheme);
+
+  // Background Parallax & Scroll Animator
+  let bgAnimator = null;
+  try {
+    bgAnimator = new MazeBgAnimator('bg-maze-canvas');
+  } catch (err) {
+    console.warn('[MazeQuest] Background animator setup note:', err);
+  }
 
   // App Machine & Screen Routing
   const screenLanding = document.getElementById('screen-landing');
   const screenExpedition = document.getElementById('screen-expedition');
   const screenCampaign = document.getElementById('screen-campaign');
-  const screenDuel = document.getElementById('screen-duel');
-  const screenLab = document.getElementById('screen-lab');
-  const screenBench = document.getElementById('screen-bench');
 
   const expBriefing = document.getElementById('expedition-briefing');
   const expPlay = document.getElementById('expedition-play');
@@ -73,14 +63,12 @@ function initApp() {
   const navLanding = document.getElementById('nav-landing');
   const navExpedition = document.getElementById('nav-expedition');
   const navCampaign = document.getElementById('nav-campaign');
-  const navDuel = document.getElementById('nav-duel');
-  const navLab = document.getElementById('nav-lab');
-  const navBench = document.getElementById('nav-bench');
 
-  const allScreens = [screenLanding, screenExpedition, screenCampaign, screenDuel, screenLab, screenBench];
-  const allNavs = [navLanding, navExpedition, navCampaign, navDuel, navLab, navBench];
+  const allScreens = [screenLanding, screenExpedition, screenCampaign];
+  const allNavs = [navLanding, navExpedition, navCampaign];
 
   let currentCampaignLevelId = null;
+  let campaignLevelStartTime = 0;
 
   function showScreen(screen) {
     allScreens.forEach(s => s && s.classList.remove('active'));
@@ -93,10 +81,6 @@ function initApp() {
       screenCampaign.classList.add('active');
       navCampaign.classList.add('active');
       renderCampaignUI();
-    } else if (screen === AppScreen.DUEL) {
-      screenDuel.classList.add('active');
-      navDuel.classList.add('active');
-      initDuelGame();
     } else if (screen === AppScreen.EXPEDITION_BRIEFING || screen === AppScreen.EXPEDITION_PLAY || screen === AppScreen.EXPEDITION_RESULT) {
       screenExpedition.classList.add('active');
       navExpedition.classList.add('active');
@@ -109,17 +93,11 @@ function initApp() {
       if (!simpleGrid) {
         startSimpleMaze(simpleDifficulty);
       } else {
-        expRenderer.resize();
-        expRenderer.render();
+        requestAnimationFrame(() => {
+          expRenderer.resize();
+          expRenderer.render();
+        });
       }
-    } else if (screen === AppScreen.LAB) {
-      screenLab.classList.add('active');
-      navLab.classList.add('active');
-      labRenderer.resize();
-      labRenderer.render();
-    } else if (screen === AppScreen.BENCHMARK) {
-      screenBench.classList.add('active');
-      navBench.classList.add('active');
     }
   }
 
@@ -128,19 +106,6 @@ function initApp() {
   // Expedition Controller
   const expCtrl = new ExpeditionController({
     onUpdate: (data) => updateExpeditionUI(data),
-    onSound: (snd) => sound.play(snd),
-  });
-
-  // Lab Controller
-  const labCtrl = new LabController({
-    onUpdate: (data) => updateLabUI(data),
-    onEvent: (evt) => handleLabEvent(evt),
-    onSound: (snd) => sound.play(snd),
-  });
-
-  // Duel Controller
-  const duelCtrl = new DuelController({
-    onUpdate: (data) => updateDuelUI(data),
     onSound: (snd) => sound.play(snd),
   });
 
@@ -185,6 +150,9 @@ function initApp() {
     brandHomeBtn.addEventListener('click', () => {
       sound.play('click');
       app.toLanding();
+      if (bgAnimator) {
+        bgAnimator.triggerEntrancePortal();
+      }
     });
   }
 
@@ -209,29 +177,12 @@ function initApp() {
     app.toCampaign();
   });
 
-  navDuel.addEventListener('click', () => {
-    sound.play('click');
-    app.toDuel();
-  });
-
-  navLab.addEventListener('click', () => {
-    sound.play('click');
-    app.toLab();
-  });
-
-  navBench.addEventListener('click', () => {
-    sound.play('click');
-    app.toBenchmark();
-  });
-
   // -------------------------------------------------------------
   // Landing Page Hero & Interactive Preview
   // -------------------------------------------------------------
   const btnHeroPlayInstant = document.getElementById('btn-hero-play-instant');
   const cardGoAdventure = document.getElementById('card-go-adventure');
   const cardGoCampaign = document.getElementById('card-go-campaign');
-  const cardGoDuel = document.getElementById('card-go-duel');
-  const cardGoLab = document.getElementById('card-go-lab');
 
   if (btnHeroPlayInstant) {
     btnHeroPlayInstant.addEventListener('click', () => {
@@ -254,18 +205,6 @@ function initApp() {
       app.toCampaign();
     });
   }
-  if (cardGoDuel) {
-    cardGoDuel.addEventListener('click', () => {
-      sound.play('click');
-      app.toDuel();
-    });
-  }
-  if (cardGoLab) {
-    cardGoLab.addEventListener('click', () => {
-      sound.play('click');
-      app.toLab();
-    });
-  }
 
   // Also bind any direct button clicks inside cards
   document.querySelectorAll('.card-action-btn').forEach(btn => {
@@ -279,10 +218,6 @@ function initApp() {
         startSimpleMaze(simpleDifficulty);
       } else if (card.id === 'card-go-campaign') {
         app.toCampaign();
-      } else if (card.id === 'card-go-duel') {
-        app.toDuel();
-      } else if (card.id === 'card-go-lab') {
-        app.toLab();
       }
     });
   });
@@ -464,15 +399,60 @@ function initApp() {
         const lvl = campaignStore.findLevel(lvlId);
         if (lvl) {
           sound.play('click');
-          currentCampaignLevelId = lvlId;
-          loadExpeditionCode(lvl.code);
           app.transition(AppScreen.EXPEDITION_PLAY);
-          expRenderer.setGrid(expCtrl.grid);
-          expRenderer.setEntities({ phantoms: expCtrl.phantoms, relics: expCtrl.relics });
-          expCtrl.start();
+          startCampaignLevel(lvlId);
         }
       });
     });
+  }
+
+  function startCampaignLevel(lvlId) {
+    const lvl = campaignStore.findLevel(lvlId);
+    if (!lvl) return;
+
+    hideMazeVictoryModal();
+    if (simpleSolveTimer) {
+      clearInterval(simpleSolveTimer);
+      simpleSolveTimer = null;
+    }
+
+    currentCampaignLevelId = lvlId;
+    campaignLevelStartTime = performance.now();
+    simpleWon = false;
+    simpleSolving = false;
+    simpleSteps = 0;
+    if (playStepsCounter) playStepsCounter.textContent = '0';
+
+    // Build the authentic level maze from its pipeline code
+    const buildResult = buildMaze(lvl.code);
+    simpleGrid = buildResult.grid;
+    simpleScout = simpleGrid.start;
+    simpleHeading = Wall.E;
+
+    // Show Quest Map back button
+    const btnBackToCampaign = document.getElementById('btn-back-to-campaign');
+    if (btnBackToCampaign) btnBackToCampaign.style.display = 'inline-block';
+
+    // Deselect difficulty pills when in campaign mode
+    document.querySelectorAll('.sp-diff-btn, .sp-size-btn').forEach(btn => {
+      btn.classList.remove('active');
+    });
+
+    // Render on classic canvas
+    expRenderer.setGrid(simpleGrid);
+    expRenderer.clearSolution();
+    expRenderer.resetPlayer();
+    expRenderer.resize();
+    expRenderer.render();
+
+    // Set banner info
+    if (mazeGuideBanner) {
+      mazeGuideBanner.className = 'maze-guide-banner';
+      if (guideIcon) guideIcon.textContent = '🗺️';
+      if (guideText) {
+        guideText.innerHTML = `<strong>LEVEL ${lvl.id}: ${lvl.name.toUpperCase()} (${lvl.size})</strong> • Par Time: <strong>${lvl.parTime}s</strong>. Reach the exit to earn ⭐⭐⭐!`;
+      }
+    }
   }
 
   if (btnCampReset) {
@@ -485,100 +465,7 @@ function initApp() {
     });
   }
 
-  // -------------------------------------------------------------
-  // 2-Player Local Duel Race Logic
-  // -------------------------------------------------------------
-  const btnDuelStart = document.getElementById('btn-duel-start');
-  const btnDuelNew = document.getElementById('btn-duel-new');
-  const btnDuelRematch = document.getElementById('btn-duel-rematch');
-  const btnDuelNext = document.getElementById('btn-duel-next');
-  const btnDuelMenu = document.getElementById('btn-duel-menu');
-  const duelWinnerOverlay = document.getElementById('duel-winner-overlay');
-  const duelWinnerTitle = document.getElementById('duel-winner-title');
-  const duelTimerVal = document.getElementById('duel-timer-val');
-  const duelP1Steps = document.getElementById('duel-p1-steps');
-  const duelP1Relics = document.getElementById('duel-p1-relics');
-  const duelP2Steps = document.getElementById('duel-p2-steps');
-  const duelP2Relics = document.getElementById('duel-p2-relics');
 
-  let duelCurrentCode = 'v1/21x21/bkt/DUEL_SEED_1/b20/t10/srv';
-
-  function initDuelGame(code = duelCurrentCode) {
-    duelCurrentCode = code;
-    duelWinnerOverlay.style.display = 'none';
-    duelCtrl.load(code);
-    duelRenderer.setGrid(duelCtrl.grid);
-    duelRenderer.setDuelPlayers(duelCtrl.p1, duelCtrl.p2);
-    duelRenderer.resize();
-    duelRenderer.render();
-  }
-
-  function updateDuelUI(data) {
-    if (!data) return;
-    if (duelP1Steps) duelP1Steps.textContent = data.p1.steps;
-    if (duelP1Relics) duelP1Relics.textContent = data.p1.relics;
-    if (duelP2Steps) duelP2Steps.textContent = data.p2.steps;
-    if (duelP2Relics) duelP2Relics.textContent = data.p2.relics;
-
-    const s = Math.floor(data.elapsedSeconds);
-    const ms = Math.floor((data.elapsedSeconds - s) * 10);
-    const mins = Math.floor(s / 60);
-    const secs = s % 60;
-    if (duelTimerVal) {
-      duelTimerVal.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}.${ms}`;
-    }
-
-    if (duelCtrl.grid) {
-      duelRenderer.setFog(data.fog);
-      duelRenderer.setDuelPlayers(data.p1, data.p2);
-    }
-
-    if (data.state === DuelState.FINISHED && data.winner) {
-      duelWinnerOverlay.style.display = 'flex';
-      duelWinnerTitle.textContent = `${data.winner.name.toUpperCase()} WINS THE DUEL!`;
-      sound.play('win');
-    }
-  }
-
-  if (btnDuelStart) {
-    btnDuelStart.addEventListener('click', () => {
-      sound.play('click');
-      if (duelCtrl.state !== DuelState.READY) {
-        initDuelGame();
-      }
-      duelCtrl.start();
-    });
-  }
-
-  if (btnDuelNew) {
-    btnDuelNew.addEventListener('click', () => {
-      sound.play('click');
-      initDuelGame(`v1/21x21/bkt/${randomSeed()}/b20/t10/srv`);
-    });
-  }
-
-  if (btnDuelRematch) {
-    btnDuelRematch.addEventListener('click', () => {
-      sound.play('click');
-      initDuelGame(duelCurrentCode);
-      duelCtrl.start();
-    });
-  }
-
-  if (btnDuelNext) {
-    btnDuelNext.addEventListener('click', () => {
-      sound.play('click');
-      initDuelGame(`v1/21x21/bkt/${randomSeed()}/b20/t10/srv`);
-      duelCtrl.start();
-    });
-  }
-
-  if (btnDuelMenu) {
-    btnDuelMenu.addEventListener('click', () => {
-      sound.play('click');
-      app.toLanding();
-    });
-  }
 
   // -------------------------------------------------------------
   // Solo Expedition UI & Interactions
@@ -821,6 +708,161 @@ function initApp() {
   const guideText = document.getElementById('guide-text');
   const btnHomeFromPlay = document.getElementById('btn-home-from-play');
 
+  // Maze Victory / Game Completed Modal Elements
+  const mazeVictoryOverlay = document.getElementById('maze-victory-overlay');
+  const btnVictoryClose = document.getElementById('btn-victory-close');
+  const btnVictoryNew = document.getElementById('btn-victory-new');
+  const btnVictoryRetry = document.getElementById('btn-victory-retry');
+  const btnVictoryInspect = document.getElementById('btn-victory-inspect');
+  const victoryBadge = document.getElementById('victory-badge');
+  const victoryModalTitle = document.getElementById('victory-modal-title');
+  const victoryModalDesc = document.getElementById('victory-modal-desc');
+  const victoryStatSteps = document.getElementById('victory-stat-steps');
+  const victoryStatDiff = document.getElementById('victory-stat-diff');
+  const victoryStatRating = document.getElementById('victory-stat-rating');
+  const victoryConfettiCanvas = document.getElementById('victory-confetti-canvas');
+
+  let confettiAnimId = null;
+
+  function launchVictoryConfetti() {
+    if (!victoryConfettiCanvas) return;
+    const canvas = victoryConfettiCanvas;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const parent = canvas.parentElement || canvas;
+    canvas.width = parent.clientWidth || 450;
+    canvas.height = parent.clientHeight || 450;
+
+    const colors = ['#f59e0b', '#facc15', '#38bdf8', '#34d399', '#f43f5e', '#a855f7', '#ffffff'];
+    const particles = [];
+    const count = 75;
+
+    for (let i = 0; i < count; i++) {
+      particles.push({
+        x: canvas.width * 0.5 + (Math.random() - 0.5) * 80,
+        y: canvas.height * 0.42 + (Math.random() - 0.5) * 40,
+        vx: (Math.random() - 0.5) * 12,
+        vy: -Math.random() * 9 - 4,
+        size: Math.random() * 7 + 4,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        rotation: Math.random() * Math.PI * 2,
+        vRot: (Math.random() - 0.5) * 0.2,
+        opacity: 1,
+        drag: 0.96,
+        gravity: 0.28,
+      });
+    }
+
+    if (confettiAnimId) cancelAnimationFrame(confettiAnimId);
+
+    let frames = 0;
+    function renderConfetti() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let alive = false;
+
+      for (const p of particles) {
+        p.vx *= p.drag;
+        p.vy = p.vy * p.drag + p.gravity;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rotation += p.vRot;
+        if (frames > 40) {
+          p.opacity -= 0.015;
+        }
+
+        if (p.opacity > 0 && p.y < canvas.height + 20) {
+          alive = true;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rotation);
+          ctx.globalAlpha = Math.max(0, p.opacity);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+          ctx.restore();
+        }
+      }
+
+      frames++;
+      if (alive && frames < 180) {
+        confettiAnimId = requestAnimationFrame(renderConfetti);
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        confettiAnimId = null;
+      }
+    }
+
+    confettiAnimId = requestAnimationFrame(renderConfetti);
+  }
+
+  function stopVictoryConfetti() {
+    if (confettiAnimId) {
+      cancelAnimationFrame(confettiAnimId);
+      confettiAnimId = null;
+    }
+    if (victoryConfettiCanvas) {
+      const ctx = victoryConfettiCanvas.getContext('2d');
+      if (ctx) ctx.clearRect(0, 0, victoryConfettiCanvas.width, victoryConfettiCanvas.height);
+    }
+  }
+
+  function showMazeVictoryModal(options = {}) {
+    if (!mazeVictoryOverlay) return;
+    const isCampaign = options.type === 'campaign';
+    const isPlayer = options.type === 'player';
+    const diffUpper = (options.difficulty || simpleDifficulty || 'EASY').toUpperCase();
+
+    const btnVictoryCampaign = document.getElementById('btn-victory-campaign');
+    if (btnVictoryCampaign) {
+      btnVictoryCampaign.style.display = isCampaign ? 'inline-block' : 'none';
+    }
+
+    if (isCampaign) {
+      const lvl = campaignStore.findLevel(options.levelId);
+      const lvlName = lvl ? lvl.name : `Level ${options.levelId}`;
+      if (victoryBadge) victoryBadge.textContent = `🌟 STAGE ${options.levelId} CONQUERED`;
+      if (victoryModalTitle) victoryModalTitle.textContent = `${lvlName.toUpperCase()} CLEARED!`;
+      if (victoryModalDesc) {
+        victoryModalDesc.innerHTML = `Sensational! You conquered <strong>${lvlName}</strong> in <strong>${options.steps} steps</strong> and <strong>${options.time}s</strong> (Par: ${options.parTime}s)! ⭐ Rating: <strong>${options.stars}</strong>`;
+      }
+      if (victoryStatSteps) victoryStatSteps.textContent = String(options.steps || 0);
+      if (victoryStatDiff) victoryStatDiff.textContent = `PAR ${options.parTime}s`;
+      if (victoryStatRating) victoryStatRating.textContent = options.stars || '⭐⭐⭐';
+      if (btnVictoryNew) btnVictoryNew.textContent = 'NEXT LEVEL ▶';
+    } else if (isPlayer) {
+      if (btnVictoryNew) btnVictoryNew.textContent = '🎲 NEW MAZE';
+      if (victoryBadge) victoryBadge.textContent = '🏆 GOAL REACHED';
+      if (victoryModalTitle) victoryModalTitle.textContent = 'GAME COMPLETED!';
+      if (victoryModalDesc) {
+        victoryModalDesc.innerHTML = `Magnificent! You successfully navigated through the <strong>${diffUpper}</strong> maze and reached the goal in <strong>${options.steps} steps</strong>!`;
+      }
+      if (victoryStatSteps) victoryStatSteps.textContent = String(options.steps || 0);
+      if (victoryStatDiff) victoryStatDiff.textContent = diffUpper;
+      if (victoryStatRating) victoryStatRating.textContent = 'VICTORY 🥇';
+    } else {
+      if (btnVictoryNew) btnVictoryNew.textContent = '🎲 NEW MAZE';
+      if (victoryBadge) victoryBadge.textContent = '🤖 MAZE SOLVED';
+      if (victoryModalTitle) victoryModalTitle.textContent = 'MAZE SOLVED!';
+      const algo = options.algoName || 'Algorithm';
+      if (victoryModalDesc) {
+        victoryModalDesc.innerHTML = `<strong>${algo}</strong> successfully computed the optimal path of <strong>${options.steps} steps</strong> after exploring ${options.explored || 0} cells!`;
+      }
+      if (victoryStatSteps) victoryStatSteps.textContent = String(options.steps || 0);
+      if (victoryStatDiff) victoryStatDiff.textContent = diffUpper;
+      if (victoryStatRating) victoryStatRating.textContent = 'OPTIMAL 🎯';
+    }
+
+    mazeVictoryOverlay.style.display = 'flex';
+    sound.play('win');
+    launchVictoryConfetti();
+  }
+
+  function hideMazeVictoryModal() {
+    if (!mazeVictoryOverlay) return;
+    mazeVictoryOverlay.style.display = 'none';
+    stopVictoryConfetti();
+  }
+
   /**
    * Generates a 15x15 maze where difficulty controls the number of confusing choices,
    * forks, deceptive branches, and loops the player encounters.
@@ -870,6 +912,7 @@ function initApp() {
   }
 
   function startSimpleMaze(difficulty = simpleDifficulty) {
+    hideMazeVictoryModal();
     if (simpleSolveTimer) {
       clearInterval(simpleSolveTimer);
       simpleSolveTimer = null;
@@ -945,10 +988,49 @@ function initApp() {
     if (simpleScout === simpleGrid.end) {
       simpleWon = true;
       sound.play('win');
-      if (mazeGuideBanner) {
-        mazeGuideBanner.className = 'maze-guide-banner victory';
-        if (guideIcon) guideIcon.textContent = '🎉';
-        if (guideText) guideText.innerHTML = `<strong>CONGRATULATIONS!</strong> You reached the exit in <strong>${simpleSteps} steps</strong>! Click <strong>🎲 GENERATE MAZE</strong> to play again!`;
+
+      if (currentCampaignLevelId !== null) {
+        const elapsedSec = Math.max(1, Math.round((performance.now() - campaignLevelStartTime) / 100) / 10);
+        const lvl = campaignStore.findLevel(currentCampaignLevelId);
+        const parTime = lvl ? lvl.parTime : 30;
+
+        // Base score calculation for campaign
+        const score = Math.max(200, Math.round(1000 - Math.max(0, elapsedSec - parTime) * 20 - Math.max(0, simpleSteps - simpleGrid.size * 1.5) * 5));
+        const rec = campaignStore.recordLevelCompletion(currentCampaignLevelId, score, elapsedSec);
+        const starsNum = rec ? rec.stars : 1;
+        const starStr = starsNum === 3 ? '⭐⭐⭐' : (starsNum === 2 ? '⭐⭐☆' : '⭐☆☆');
+
+        if (mazeGuideBanner) {
+          mazeGuideBanner.className = 'maze-guide-banner victory';
+          if (guideIcon) guideIcon.textContent = '🌟';
+          if (guideText) {
+            guideText.innerHTML = `<strong>STAGE ${currentCampaignLevelId} CONQUERED!</strong> Cleared in <strong>${elapsedSec}s</strong> (${simpleSteps} steps) • Rating: <strong>${starStr}</strong>!`;
+          }
+        }
+
+        setTimeout(() => {
+          showMazeVictoryModal({
+            type: 'campaign',
+            levelId: currentCampaignLevelId,
+            steps: simpleSteps,
+            time: elapsedSec,
+            parTime,
+            stars: starStr,
+          });
+        }, 250);
+      } else {
+        if (mazeGuideBanner) {
+          mazeGuideBanner.className = 'maze-guide-banner victory';
+          if (guideIcon) guideIcon.textContent = '🎉';
+          if (guideText) guideText.innerHTML = `<strong>CONGRATULATIONS!</strong> You reached the exit in <strong>${simpleSteps} steps</strong>! Click <strong>🎲 GENERATE MAZE</strong> to play again!`;
+        }
+        setTimeout(() => {
+          showMazeVictoryModal({
+            type: 'player',
+            steps: simpleSteps,
+            difficulty: simpleDifficulty,
+          });
+        }, 250);
       }
     }
   }
@@ -1028,12 +1110,23 @@ function initApp() {
             if (guideIcon) guideIcon.textContent = '✨';
             if (guideText) guideText.innerHTML = `<strong>${algoName} Solution:</strong> Found path of <strong>${finalResult.path.length} steps</strong> (explored ${exploredCount} cells). Red solution path revealed! Click <strong>↺ RETRY</strong> to walk it yourself!`;
           }
+
+          setTimeout(() => {
+            showMazeVictoryModal({
+              type: 'solver',
+              algoName,
+              steps: finalResult.path.length,
+              explored: exploredCount,
+              difficulty: simpleDifficulty,
+            });
+          }, 450);
         }
       }
     }, 20);
   }
 
   function retryCurrentMaze() {
+    hideMazeVictoryModal();
     if (!simpleGrid) return;
     if (simpleSolveTimer) {
       clearInterval(simpleSolveTimer);
@@ -1046,6 +1139,10 @@ function initApp() {
     simpleSteps = 0;
     if (playStepsCounter) playStepsCounter.textContent = '0';
 
+    if (currentCampaignLevelId !== null) {
+      campaignLevelStartTime = performance.now();
+    }
+
     expRenderer.resetPlayer();
     expRenderer.clearSolution();
 
@@ -1057,10 +1154,68 @@ function initApp() {
     }
   }
 
+  // Victory Modal Button wiring
+  if (btnVictoryClose) {
+    btnVictoryClose.addEventListener('click', () => {
+      sound.play('click');
+      hideMazeVictoryModal();
+    });
+  }
+
+  if (btnVictoryInspect) {
+    btnVictoryInspect.addEventListener('click', () => {
+      sound.play('click');
+      hideMazeVictoryModal();
+    });
+  }
+
+  if (btnVictoryRetry) {
+    btnVictoryRetry.addEventListener('click', () => {
+      hideMazeVictoryModal();
+      retryCurrentMaze();
+    });
+  }
+
+  if (btnVictoryNew) {
+    btnVictoryNew.addEventListener('click', () => {
+      hideMazeVictoryModal();
+      if (currentCampaignLevelId !== null) {
+        const nextId = currentCampaignLevelId + 1;
+        if (nextId <= campaignStore.totalLevels) {
+          startCampaignLevel(nextId);
+        } else {
+          app.toCampaign();
+        }
+      } else {
+        startSimpleMaze(simpleDifficulty);
+      }
+    });
+  }
+
+  const btnVictoryCampaign = document.getElementById('btn-victory-campaign');
+  if (btnVictoryCampaign) {
+    btnVictoryCampaign.addEventListener('click', () => {
+      sound.play('click');
+      hideMazeVictoryModal();
+      app.toCampaign();
+    });
+  }
+
+  const btnBackToCampaign = document.getElementById('btn-back-to-campaign');
+  if (btnBackToCampaign) {
+    btnBackToCampaign.addEventListener('click', () => {
+      sound.play('click');
+      hideMazeVictoryModal();
+      app.toCampaign();
+    });
+  }
+
   // Buttons wiring
   if (btnGenerateMaze) {
     btnGenerateMaze.addEventListener('click', () => {
       sound.play('click');
+      currentCampaignLevelId = null;
+      if (btnBackToCampaign) btnBackToCampaign.style.display = 'none';
       startSimpleMaze(simpleDifficulty);
     });
   }
@@ -1177,19 +1332,21 @@ function initApp() {
 
   // Global Keyboard Controls (WASD / Arrows for Simple Maze and 2-Player Duel)
   window.addEventListener('keydown', (e) => {
-    // 1. Duel mode
-    if (app.screen === AppScreen.DUEL && duelCtrl.state === DuelState.RACING) {
-      if (e.code === 'KeyW') { e.preventDefault(); duelCtrl.moveP1(Wall.N); }
-      else if (e.code === 'KeyD') { e.preventDefault(); duelCtrl.moveP1(Wall.E); }
-      else if (e.code === 'KeyS') { e.preventDefault(); duelCtrl.moveP1(Wall.S); }
-      else if (e.code === 'KeyA') { e.preventDefault(); duelCtrl.moveP1(Wall.W); }
-
-      if (e.code === 'ArrowUp') { e.preventDefault(); duelCtrl.moveP2(Wall.N); }
-      else if (e.code === 'ArrowRight') { e.preventDefault(); duelCtrl.moveP2(Wall.E); }
-      else if (e.code === 'ArrowDown') { e.preventDefault(); duelCtrl.moveP2(Wall.S); }
-      else if (e.code === 'ArrowLeft') { e.preventDefault(); duelCtrl.moveP2(Wall.W); }
-      return;
+    // 0. Victory Modal active
+    if (mazeVictoryOverlay && mazeVictoryOverlay.style.display !== 'none') {
+      if (e.code === 'Escape') {
+        e.preventDefault();
+        hideMazeVictoryModal();
+        return;
+      }
+      if (e.code === 'Enter') {
+        e.preventDefault();
+        hideMazeVictoryModal();
+        startSimpleMaze(simpleDifficulty);
+        return;
+      }
     }
+
 
     // 2. Simple Maze Play Controls
     if (app.screen === AppScreen.EXPEDITION_PLAY) {
@@ -1230,323 +1387,19 @@ function initApp() {
     if (app.screen === AppScreen.EXPEDITION_PLAY) {
       expRenderer.resize();
       expRenderer.render();
-    } else if (app.screen === AppScreen.DUEL) {
-      duelRenderer.resize();
-      duelRenderer.render();
-    } else if (app.screen === AppScreen.LAB) {
-      labRenderer.resize();
-      labRenderer.render();
     }
   });
-
-  // -------------------------------------------------------------
-  // Cartographer Lab UI & Interactions
-  // -------------------------------------------------------------
-  const labDim = document.getElementById('lab-dim');
-  const labDimVal = document.getElementById('lab-dim-val');
-  const labGen = document.getElementById('lab-gen');
-  const labSeed = document.getElementById('lab-seed');
-  const btnLabRandomSeed = document.getElementById('btn-lab-random-seed');
-  const labBraid = document.getElementById('lab-braid');
-  const labBraidVal = document.getElementById('lab-braid-val');
-  const labTerrain = document.getElementById('lab-terrain');
-  const labTerrainVal = document.getElementById('lab-terrain-val');
-  const btnLabGenerate = document.getElementById('btn-lab-generate');
-
-  const labSolver = document.getElementById('lab-solver');
-  const btnLabSolve = document.getElementById('btn-lab-solve');
-  const btnLabRace = document.getElementById('btn-lab-race');
-  const toggleHeat = document.getElementById('toggle-heat');
-  const labDial = document.getElementById('lab-dial');
-  const labTransport = document.getElementById('lab-transport');
-  const labCodeDisplay = document.getElementById('lab-code-display');
-
-  labDim.addEventListener('input', () => {
-    labDimVal.textContent = `${labDim.value} x ${labDim.value}`;
-  });
-
-  labBraid.addEventListener('input', () => {
-    labBraidVal.textContent = `${labBraid.value}%`;
-  });
-
-  labTerrain.addEventListener('input', () => {
-    labTerrainVal.textContent = `${labTerrain.value}%`;
-  });
-
-  btnLabRandomSeed.addEventListener('click', () => {
-    sound.play('click');
-    labSeed.value = randomSeed();
-  });
-
-  btnLabGenerate.addEventListener('click', () => {
-    sound.play('click');
-    const dim = parseInt(labDim.value, 10);
-    labCtrl.rows = dim;
-    labCtrl.cols = dim;
-    labCtrl.generator = labGen.value;
-    labCtrl.seed = labSeed.value.trim() || randomSeed();
-    labCtrl.braidPct = parseInt(labBraid.value, 10);
-    labCtrl.terrainPct = parseInt(labTerrain.value, 10);
-    labCtrl.generate();
-    labRenderer.setGrid(labCtrl.grid);
-  });
-
-  btnLabSolve.addEventListener('click', () => {
-    sound.play('click');
-    labCtrl.solver = labSolver.value;
-    labCtrl.solve();
-  });
-
-  btnLabRace.addEventListener('click', () => {
-    sound.play('click');
-    labCtrl.startLockstepRace(['dfs', 'bfs', 'dij', 'ast']);
-  });
-
-  toggleHeat.addEventListener('change', (e) => {
-    labCtrl.heatMapMode = e.detail.checked;
-  });
-
-  labDial.addEventListener('change', (e) => {
-    labCtrl.setSpeed(e.detail.speed);
-  });
-
-  labTransport.addEventListener('action', (e) => {
-    const act = e.detail.action;
-    if (act === 'play') labCtrl.play();
-    else if (act === 'pause') labCtrl.pause();
-    else if (act === 'step-forward') labCtrl.step();
-    else if (act === 'stop') labCtrl.reset();
-  });
-
-  function updateLabUI(data) {
-    if (!data) return;
-    const labCodeDisp = document.getElementById('lab-code-display');
-    if (labCodeDisp) labCodeDisp.textContent = data.code;
-    renderIntegrityReport(data.validationReport);
-    renderComplexityCard(data.complexity);
-    renderTelemetryCard(data.telemetry);
-  }
-
-  function handleLabEvent(evt) {
-    if (evt.t === 'VISIT') {
-      labRenderer.recordVisit(evt.cell);
-    } else if (evt.t === 'PATH') {
-      labRenderer.path.push(evt.cell);
-      labRenderer.render();
-    }
-  }
-
-  function renderIntegrityReport(rep) {
-    if (!rep) return;
-    const setT = (id, val) => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = val;
-    };
-    setT('rep-sym', rep.symmetric ? 'YES' : 'NO');
-    setT('rep-border', rep.bordersClosed ? 'CLOSED' : 'OPEN');
-    setT('rep-conn', rep.connected ? 'YES' : 'NO');
-    setT('rep-perfect', rep.isTree ? 'YES' : 'NO');
-    setT('rep-loops', rep.loops);
-    setT('rep-deadends', rep.deadEnds);
-    setT('rep-solvable', rep.solvable ? 'YES' : 'NO');
-  }
-
-  function renderComplexityCard(comp) {
-    const cEl = document.getElementById('complexity-card-content');
-    if (!cEl || !comp) return;
-    cEl.innerHTML = `
-      <div style="font-size: 11px; margin-bottom: 4px;"><strong>TIME:</strong> ${comp.time || '-'}</div>
-      <div style="font-size: 11px; margin-bottom: 4px;"><strong>SPACE:</strong> ${comp.space || '-'}</div>
-      <div style="font-size: 10px; color: var(--text-dim);">${comp.note || ''}</div>
-    `;
-  }
-
-  function renderTelemetryCard(telem) {
-    if (!telem) return;
-    const setT = (id, val) => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = val;
-    };
-    setT('stat-hops', telem.hops ?? '-');
-    setT('stat-cost', telem.cost ?? '-');
-    setT('stat-expanded', telem.expanded ?? '-');
-    setT('stat-peak', telem.frontierPeak ?? '-');
-  }
-
-  // Lab Export Actions
-  document.getElementById('btn-lab-export-png').addEventListener('click', () => {
-    sound.play('click');
-    const url = labRenderer.exportPngWithCartouche({ code: labCtrl.code });
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `cartographer_${Date.now()}.png`;
-    a.click();
-    URL.revokeObjectURL(url);
-  });
-
-  document.getElementById('btn-lab-export-json').addEventListener('click', () => {
-    sound.play('click');
-    const json = exportMazeJson(labCtrl.grid, { code: labCtrl.code });
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `maze_${Date.now()}.maze.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  });
-
-  const fileImportJson = document.getElementById('file-import-json');
-  document.getElementById('btn-lab-import-json').addEventListener('click', () => {
-    fileImportJson.click();
-  });
-
-  fileImportJson.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const text = await file.text();
-    try {
-      const imported = importMazeJson(text);
-      labCtrl.grid = imported.grid;
-      labCtrl.rows = imported.grid.rows;
-      labCtrl.cols = imported.grid.cols;
-      labDim.value = labCtrl.rows;
-      labDimVal.textContent = `${labCtrl.rows} x ${labCtrl.cols}`;
-      labRenderer.setGrid(imported.grid);
-      alert('Maze successfully loaded!');
-    } catch (err) {
-      alert(`Import error: ${err.message}`);
-    }
-  });
-
-  // Editor Mode Buttons
-  const modeButtons = document.querySelectorAll('.btn-mode');
-  let editorMode = 'view';
-  modeButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      sound.play('click');
-      editorMode = btn.dataset.mode;
-      modeButtons.forEach(b => b.classList.toggle('active', b === btn));
-    });
-  });
-
-  labCanvas.addEventListener('click', (e) => {
-    if (editorMode === 'view' || !labCtrl.grid) return;
-    const rect = labCanvas.getBoundingClientRect();
-    const x = e.clientX - rect.left - labRenderer.margin;
-    const y = e.clientY - rect.top - labRenderer.margin;
-    const c = Math.floor(x / labRenderer.cellPx);
-    const r = Math.floor(y / labRenderer.cellPx);
-
-    if (labCtrl.grid.inBounds(r, c)) {
-      const idx = labCtrl.grid.index(r, c);
-      if (editorMode === 'wall') {
-        if (c < labCtrl.grid.cols - 1) {
-          labCtrl.toggleWall(idx, idx + 1);
-        }
-      } else if (editorMode === 'mud') {
-        labCtrl.paintTerrain(idx, 2);
-      }
-      labRenderer.rebuildL0();
-      labRenderer.render();
-    }
-  });
-
-  // -------------------------------------------------------------
-  // Benchmark UI
-  // -------------------------------------------------------------
-  const btnRunBenchmark = document.getElementById('btn-run-benchmark');
-  const benchProgressRow = document.getElementById('bench-progress-row');
-  const benchProgressBar = document.getElementById('bench-progress-bar');
-  const benchProgressText = document.getElementById('bench-progress-text');
-  const benchTableBody = document.getElementById('bench-table-body');
-  const btnBenchExportCsv = document.getElementById('btn-bench-export-csv');
-  const btnBenchExportJson = document.getElementById('btn-bench-export-json');
-
-  let benchmarkData = null;
-
-  btnRunBenchmark.addEventListener('click', async () => {
-    sound.play('click');
-    btnRunBenchmark.disabled = true;
-    benchProgressRow.style.display = 'block';
-
-    benchmarkData = await runBenchmark({
-      sizes: [20, 40, 60],
-      solvers: ['dfs', 'bfs', 'dij', 'ast', 'wfl'],
-      generator: 'bkt',
-      trials: 5,
-    }, ({ current, total, solver, size }) => {
-      const pct = Math.round((current / total) * 100);
-      benchProgressBar.style.width = `${pct}%`;
-      benchProgressText.textContent = `BENCHMARKING ${solver.toUpperCase()} ON ${size}x${size} (${pct}%)...`;
-    });
-
-    benchProgressRow.style.display = 'none';
-    btnRunBenchmark.disabled = false;
-    btnBenchExportCsv.disabled = false;
-    btnBenchExportJson.disabled = false;
-
-    renderBenchmarkTable(benchmarkData.summary);
-  });
-
-  function renderBenchmarkTable(summary) {
-    let html = '';
-    for (const [solver, sizes] of Object.entries(summary)) {
-      for (const [size, metrics] of Object.entries(sizes)) {
-        html += `
-          <tr>
-            <td style="font-weight: 600; color: var(--brass);">${solver.toUpperCase()}</td>
-            <td>${size}x${size}</td>
-            <td class="td-num">${metrics.medianTimeMs} ms</td>
-            <td class="td-num">&#177; ${metrics.iqrMs} ms</td>
-            <td class="td-num">${metrics.avgExpanded}</td>
-            <td class="td-num">${metrics.avgHops}</td>
-            <td class="td-num">${metrics.avgCost}</td>
-          </tr>
-        `;
-      }
-    }
-    benchTableBody.innerHTML = html;
-  }
-
-  btnBenchExportCsv.addEventListener('click', () => {
-    if (!benchmarkData) return;
-    let csv = 'Solver,Size,MedianTimeMs,IQRMs,AvgExpanded,AvgHops,AvgCost\n';
-    for (const [solver, sizes] of Object.entries(benchmarkData.summary)) {
-      for (const [size, m] of Object.entries(sizes)) {
-        csv += `${solver},${size},${m.medianTimeMs},${m.iqrMs},${m.avgExpanded},${m.avgHops},${m.avgCost}\n`;
-      }
-    }
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `benchmark_${Date.now()}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  });
-
-  btnBenchExportJson.addEventListener('click', () => {
-    if (!benchmarkData) return;
-    const blob = new Blob([JSON.stringify(benchmarkData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `benchmark_${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  });
-
-  // Initial Load: Landing Page Hero
+  // Initial Load: Landing Page Hero with Entering-the-Maze Portal Warp
   applyDifficulty('srv');
   app.toLanding();
+  if (bgAnimator) {
+    bgAnimator.triggerEntrancePortal();
+  }
 
   // Expose global app for debugging & manual navigation
   if (typeof window !== 'undefined') {
     window.app = app;
     window.expCtrl = expCtrl;
-    window.duelCtrl = duelCtrl;
-    window.labCtrl = labCtrl;
   }
 }
 

@@ -11,6 +11,31 @@
   <link rel="stylesheet" href="index.css">
 </head>
 <body>
+  <!-- Ambient Interactive Dynamic Maze Background (Reacts to Scroll & Parallax) -->
+  <canvas id="bg-maze-canvas" class="bg-maze-canvas" aria-hidden="true"></canvas>
+
+  <!-- Entering Maze World 3D Portal Intro Gate -->
+  <div id="maze-portal-intro" class="maze-portal-intro" role="dialog" aria-label="Entering Maze Realm" aria-modal="true">
+    <div class="portal-viewport">
+      <div class="portal-tunnel">
+        <div class="portal-ring ring-1"></div>
+        <div class="portal-ring ring-2"></div>
+        <div class="portal-ring ring-3"></div>
+        <div class="portal-ring ring-4"></div>
+        <div class="portal-ring ring-5"></div>
+        <div class="portal-core">
+          <div class="portal-rune">🧭</div>
+          <div class="portal-shockwave"></div>
+        </div>
+      </div>
+      <div class="portal-hud">
+        <div class="portal-hud-badge">✦ ENTERING MAZE REALM ✦</div>
+        <div class="portal-hud-title">WARPING INTO PROCEDURAL LABYRINTH...</div>
+        <div class="portal-hud-hint">Click anywhere to skip</div>
+      </div>
+    </div>
+  </div>
+
   <div class="field-terminal-root">
     <!-- Masthead Navigation Bar -->
     <header class="masthead">
@@ -32,9 +57,6 @@
         <button id="nav-landing" class="nav-tab active" type="button">HOME</button>
         <button id="nav-expedition" class="nav-tab" type="button">PLAY MAZE 🎮</button>
         <button id="nav-campaign" class="nav-tab" type="button">QUEST MAP</button>
-        <button id="nav-duel" class="nav-tab" type="button">2P DUEL</button>
-        <button id="nav-lab" class="nav-tab" type="button">DSA LAB</button>
-        <button id="nav-bench" class="nav-tab" type="button">SPEED TEST</button>
       </nav>
 
       <div class="masthead-telemetry">
@@ -76,7 +98,7 @@
             <p class="preview-caption">Breadth-First Search ripple finding the golden exit.</p>
           </div>
 
-          <!-- 4 Game Mode Cards with Direct Buttons -->
+          <!-- 2 Game Mode Cards with Direct Buttons -->
           <div class="landing-cards-grid">
             <!-- Card 1: Solo Adventure -->
             <div id="card-go-adventure" class="launch-card adventure-card" role="button" tabindex="0">
@@ -106,36 +128,6 @@
                 </div>
               </div>
               <button class="card-action-btn" type="button">OPEN MAP ▶</button>
-            </div>
-
-            <!-- Card 3: 2-Player Race Duel -->
-            <div id="card-go-duel" class="launch-card duel-card" role="button" tabindex="0">
-              <div class="card-icon-bubble">⚔️</div>
-              <div class="card-text-block">
-                <span class="card-category">MULTIPLAYER</span>
-                <h3 class="card-title">2-PLAYER RACE DUEL</h3>
-                <p class="card-desc">Race a friend on one keyboard. P1 uses WASD, P2 uses Arrow Keys.</p>
-                <div class="card-badges">
-                  <span class="mini-badge">Blue vs Red</span>
-                  <span class="mini-badge">Same Keyboard</span>
-                </div>
-              </div>
-              <button class="card-action-btn" type="button">START DUEL ▶</button>
-            </div>
-
-            <!-- Card 4: DSA Wizard Lab -->
-            <div id="card-go-lab" class="launch-card lab-card" role="button" tabindex="0">
-              <div class="card-icon-bubble">🧪</div>
-              <div class="card-text-block">
-                <span class="card-category">DSA STUDIO</span>
-                <h3 class="card-title">ALGORITHM LAB</h3>
-                <p class="card-desc">Watch BFS, DFS, Dijkstra & A* solve mazes in real time with step dials.</p>
-                <div class="card-badges">
-                  <span class="mini-badge">5 Generators</span>
-                  <span class="mini-badge">5 Solvers</span>
-                </div>
-              </div>
-              <button class="card-action-btn" type="button">OPEN LAB ▶</button>
             </div>
           </div>
 
@@ -282,6 +274,7 @@
                 <span class="sp-lbl">STEPS</span>
                 <span id="play-steps-counter" class="sp-val">0</span>
               </div>
+              <button id="btn-back-to-campaign" class="btn-hud" type="button" style="display: none;">🗺️ QUEST MAP</button>
               <button id="btn-home-from-play" class="btn-hud" type="button">🏠 HOME</button>
             </div>
           </div>
@@ -301,6 +294,60 @@
               <button id="dpad-left" class="dpad-btn left" type="button" aria-label="Move Left">◀</button>
               <button id="dpad-down" class="dpad-btn down" type="button" aria-label="Move Down">▼</button>
               <button id="dpad-right" class="dpad-btn right" type="button" aria-label="Move Right">▶</button>
+            </div>
+
+            <!-- Maze Victory / Game Completed Modal -->
+            <div id="maze-victory-overlay" class="maze-victory-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="victory-modal-title">
+              <canvas id="victory-confetti-canvas" class="victory-confetti-canvas"></canvas>
+              <div class="maze-victory-card">
+                <button id="btn-victory-close" class="victory-close-btn" type="button" aria-label="Close modal" title="Close modal">✕</button>
+                
+                <div class="trophy-display-area">
+                  <div class="trophy-radiance-aura"></div>
+                  <div class="trophy-icon-anim" aria-hidden="true">🏆</div>
+                  <div class="trophy-stars">
+                    <span class="t-star s1">✨</span>
+                    <span class="t-star s2">⭐</span>
+                    <span class="t-star s3">✨</span>
+                  </div>
+                </div>
+
+                <div class="victory-badge" id="victory-badge">MAZE CONQUERED</div>
+                <h3 id="victory-modal-title" class="victory-modal-title">GAME COMPLETED!</h3>
+                <p id="victory-modal-desc" class="victory-modal-desc">
+                  Magnificent! You successfully navigated through the maze and reached the goal!
+                </p>
+
+                <div class="victory-metrics-row">
+                  <div class="v-metric-item">
+                    <span class="v-metric-label">STEPS</span>
+                    <span id="victory-stat-steps" class="v-metric-val">0</span>
+                  </div>
+                  <div class="v-metric-item">
+                    <span class="v-metric-label">DIFFICULTY</span>
+                    <span id="victory-stat-diff" class="v-metric-val">MEDIUM</span>
+                  </div>
+                  <div class="v-metric-item">
+                    <span class="v-metric-label">STATUS</span>
+                    <span id="victory-stat-rating" class="v-metric-val">GOAL REACHED 🎯</span>
+                  </div>
+                </div>
+
+                <div class="victory-actions-row">
+                  <button id="btn-victory-new" class="btn-primary-brass pulse-button" type="button">
+                    🎲 NEW MAZE
+                  </button>
+                  <button id="btn-victory-retry" class="btn-action" type="button">
+                    ↺ REPLAY MAZE
+                  </button>
+                  <button id="btn-victory-campaign" class="btn-action" type="button" style="display: none;">
+                    🗺️ QUEST MAP
+                  </button>
+                  <button id="btn-victory-inspect" class="btn-hud" type="button">
+                    👁️ VIEW MAZE
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -352,7 +399,6 @@
                 <button id="btn-result-new" class="btn-action" type="button">NEW EXPEDITION 🎲</button>
                 <button id="btn-result-campaign" class="btn-action" type="button">QUEST MAP 🗺️</button>
                 <button id="btn-result-export" class="btn-action" type="button">SAVE RUN JSON 💾</button>
-                <button id="btn-result-lab" class="btn-action" type="button">INSPECT IN LAB 🧪</button>
               </div>
             </div>
           </div>
@@ -385,273 +431,6 @@
           <!-- Dynamic World Island Track -->
           <div id="campaign-worlds-container" class="campaign-worlds-container">
             <!-- Dynamically populated via CampaignStore in main.js -->
-          </div>
-        </div>
-      </section>
-
-      <!-- 3. SCREEN: 2-PLAYER LOCAL RACE DUEL -->
-      <section id="screen-duel" class="app-screen">
-        <div class="duel-workspace">
-          <!-- Duel Header Banner -->
-          <div class="duel-banner-card">
-            <div class="duel-title-wrap">
-              <span class="cartouche-tag">2-PLAYER DUEL</span>
-              <h2 class="duel-title">LOCAL KEYBOARD RACE</h2>
-              <p class="duel-desc">First explorer to reach the golden exit wins!</p>
-            </div>
-            <!-- Keys Legend -->
-            <div class="duel-controls-legend">
-              <div class="player-key-pill p1">
-                <span class="p-dot blue"></span>
-                <strong>PLAYER 1 (BLUE):</strong>
-                <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>
-              </div>
-              <div class="vs-badge">VS</div>
-              <div class="player-key-pill p2">
-                <span class="p-dot red"></span>
-                <strong>PLAYER 2 (RED):</strong>
-                <kbd>▲</kbd><kbd>◀</kbd><kbd>▼</kbd><kbd>▶</kbd>
-              </div>
-            </div>
-          </div>
-
-          <!-- Duel Live HUD -->
-          <div class="duel-hud-strip">
-            <div class="duel-p-card p1">
-              <div class="p-head"><span class="p-dot blue"></span> P1 BLUE</div>
-              <div class="p-stats">
-                <span>Steps: <strong id="duel-p1-steps">0</strong></span>
-                <span>Gems: <strong id="duel-p1-relics">0</strong></span>
-              </div>
-            </div>
-
-            <div class="duel-center-timer">
-              <span class="timer-lbl">RACE TIMER</span>
-              <span id="duel-timer-val" class="timer-digits">00:00.0</span>
-              <div class="duel-btn-row">
-                <button id="btn-duel-start" class="btn-primary-brass duel-btn" type="button">START RACE ▶</button>
-                <button id="btn-duel-new" class="btn-action duel-btn" type="button">NEW MAZE 🎲</button>
-              </div>
-            </div>
-
-            <div class="duel-p-card p2">
-              <div class="p-head"><span class="p-dot red"></span> P2 RED</div>
-              <div class="p-stats">
-                <span>Steps: <strong id="duel-p2-steps">0</strong></span>
-                <span>Gems: <strong id="duel-p2-relics">0</strong></span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Duel Canvas -->
-          <div class="map-viewport duel-viewport">
-            <canvas id="canvas-duel"></canvas>
-
-            <!-- Winner Celebration Overlay -->
-            <div id="duel-winner-overlay" class="duel-winner-overlay" style="display: none;">
-              <div class="winner-modal-box">
-                <span class="winner-trophy">🏆</span>
-                <h3 id="duel-winner-title" class="winner-title">PLAYER 1 WINS!</h3>
-                <p id="duel-winner-desc" class="winner-desc">First to reach the golden exit!</p>
-                <div class="winner-btn-row">
-                  <button id="btn-duel-rematch" class="btn-primary-brass" type="button">REMATCH</button>
-                  <button id="btn-duel-next" class="btn-action" type="button">NEW MAZE</button>
-                  <button id="btn-duel-menu" class="btn-action" type="button">HOME</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- 4. SCREEN: CARTOGRAPHER LAB & ALGORITHMS -->
-      <section id="screen-lab" class="app-screen">
-        <div class="lab-workspace">
-          <!-- Left Control Sidebar -->
-          <aside class="control-palette">
-            <div class="palette-header">
-              <span class="cartouche-tag">ALGORITHM STUDIO</span>
-              <h3 class="palette-title">LAB CONTROLS</h3>
-            </div>
-
-            <!-- Maze Generation Card -->
-            <div class="engraved-card">
-              <span class="card-legend">GENERATOR</span>
-              <div class="form-row">
-                <label for="lab-dim">GRID SIZE: <span id="lab-dim-val">25 x 25</span></label>
-                <input type="range" id="lab-dim" min="11" max="61" value="25" step="2">
-              </div>
-
-              <div class="form-row">
-                <label for="lab-gen">ALGORITHM</label>
-                <select id="lab-gen" class="terminal-select">
-                  <option value="bkt">Recursive Backtracker (DFS)</option>
-                  <option value="prm">Randomized Prim's (Frontier)</option>
-                  <option value="krk">Randomized Kruskal's (DSU)</option>
-                  <option value="wil">Wilson's (Uniform Spanning Tree)</option>
-                  <option value="div">Recursive Division (Chambers)</option>
-                </select>
-              </div>
-
-              <div class="form-row">
-                <label for="lab-seed">SEED</label>
-                <div class="input-action-row">
-                  <input type="text" id="lab-seed" class="terminal-input" spellcheck="false" value="7K3Q9M2D">
-                  <button id="btn-lab-random-seed" class="btn-icon" type="button" title="Random Seed">🎲</button>
-                </div>
-              </div>
-
-              <div class="form-row">
-                <label for="lab-braid">BRAID (CYCLES): <span id="lab-braid-val">0%</span></label>
-                <input type="range" id="lab-braid" min="0" max="100" value="0" step="5">
-              </div>
-
-              <div class="form-row">
-                <label for="lab-terrain">MUD TERRAIN: <span id="lab-terrain-val">0%</span></label>
-                <input type="range" id="lab-terrain" min="0" max="40" value="0" step="5">
-              </div>
-
-              <button id="btn-lab-generate" class="btn-primary-brass full" type="button">BUILD MAZE ⚡</button>
-            </div>
-
-            <!-- Pathfinding Solvers -->
-            <div class="engraved-card">
-              <span class="card-legend">SOLVER</span>
-              <div class="form-row">
-                <label for="lab-solver">ALGORITHM</label>
-                <select id="lab-solver" class="terminal-select">
-                  <option value="ast">A* Search (Optimal & Directed)</option>
-                  <option value="dij">Dijkstra (Weighted Optimal)</option>
-                  <option value="bfs">Breadth-First Search (Fewest Hops)</option>
-                  <option value="dfs">Depth-First Search (Tunnel Mole)</option>
-                  <option value="wfl">Wall Follower (Right-Hand Rule)</option>
-                </select>
-              </div>
-
-              <div class="form-row toggle-row">
-                <mech-toggle id="toggle-heat" label="HEAT MAP"></mech-toggle>
-              </div>
-
-              <div class="dial-transport-row">
-                <detent-dial id="lab-dial"></detent-dial>
-                <transport-bar id="lab-transport"></transport-bar>
-              </div>
-
-              <button id="btn-lab-solve" class="btn-action full" type="button">STEP SOLVE ▶</button>
-              <button id="btn-lab-race" class="btn-action full" type="button">4-SOLVER RACE 🏁</button>
-            </div>
-
-            <!-- Maze Editor & Export -->
-            <div class="engraved-card">
-              <span class="card-legend">MAP TOOLS</span>
-              <div class="editor-mode-group">
-                <label class="section-label">TOOL MODE</label>
-                <div class="radio-row">
-                  <button class="btn-mode active" data-mode="view" type="button">VIEW</button>
-                  <button class="btn-mode" data-mode="wall" type="button">WALLS</button>
-                  <button class="btn-mode" data-mode="mud" type="button">MUD</button>
-                </div>
-              </div>
-
-              <div class="export-actions">
-                <button id="btn-lab-export-png" class="btn-action half" type="button">EXPORT PNG</button>
-                <button id="btn-lab-export-json" class="btn-action half" type="button">SAVE JSON</button>
-                <input type="file" id="file-import-json" accept=".json,.maze.json" style="display: none;">
-                <button id="btn-lab-import-json" class="btn-action full" type="button">LOAD MAZE</button>
-              </div>
-            </div>
-          </aside>
-
-          <!-- Center Map Viewport -->
-          <section class="map-panel">
-            <div class="map-header-bar">
-              <coord-readout id="lab-coords"></coord-readout>
-              <div class="code-badge" id="lab-code-display">v1/25x25/bkt/7K3Q9M2D/b0/t0</div>
-            </div>
-            <div class="canvas-wrap">
-              <canvas id="canvas-lab"></canvas>
-            </div>
-
-            <!-- Concise DSA Guide Accordion -->
-            <div class="dsa-magic-accordion">
-              <details class="dsa-details">
-                <summary class="dsa-summary">HOW ALGORITHMS WORK (DSA)</summary>
-                <div class="dsa-guide-grid">
-                  <div class="dsa-card">
-                    <h4>🌊 Breadth-First Search (BFS)</h4>
-                    <p>Expands evenly in all directions like ripples. Always finds the path with fewest steps.</p>
-                  </div>
-                  <div class="dsa-card">
-                    <h4>🦔 Depth-First Search (DFS)</h4>
-                    <p>Explores deep along each branch before backtracking. Fast but not always optimal.</p>
-                  </div>
-                  <div class="dsa-card">
-                    <h4>🧭 Dijkstra's Algorithm</h4>
-                    <p>Considers cell weights (mud/rubble). Always finds lowest stamina cost.</p>
-                  </div>
-                  <div class="dsa-card">
-                    <h4>⚡ A* Search</h4>
-                    <p>Uses Manhattan distance heuristic to guide directly toward the exit.</p>
-                  </div>
-                  <div class="dsa-card">
-                    <h4>🖐️ Wall Follower</h4>
-                    <p>Keeps right hand on the wall. Simple and memoryless.</p>
-                  </div>
-                </div>
-              </details>
-            </div>
-          </section>
-        </div>
-      </section>
-
-      <!-- 5. SCREEN: BENCHMARK SUITE -->
-      <section id="screen-bench" class="app-screen">
-        <div class="benchmark-workspace">
-          <div class="cartouche-container">
-            <div class="cartouche-frame bench-frame">
-              <div class="cartouche-header">
-                <span class="cartouche-tag">PERFORMANCE SUITE</span>
-                <h2 class="cartouche-title">ALGORITHM BENCHMARK</h2>
-                <p class="cartouche-desc">Measure execution time, median, IQR, and memory across 20x20 to 60x60 mazes.</p>
-              </div>
-
-              <div class="cartouche-actions">
-                <button id="btn-run-benchmark" class="btn-primary-brass" type="button">RUN BENCHMARK ⚡</button>
-              </div>
-
-              <div id="bench-progress-row" class="bench-progress-row" style="display: none;">
-                <span id="bench-progress-text" class="bench-progress-text">BENCHMARKING...</span>
-                <div class="stamina-track">
-                  <div id="bench-progress-bar" class="stamina-fill" style="width: 0%;"></div>
-                </div>
-              </div>
-
-              <div class="bench-results-table-wrap">
-                <table id="bench-table" class="ledger-table bench-table">
-                  <thead>
-                    <tr>
-                      <th>SOLVER</th>
-                      <th>SIZE</th>
-                      <th>MEDIAN SPEED</th>
-                      <th>VARIANCE (IQR)</th>
-                      <th>CELLS CHECKED</th>
-                      <th>STEPS</th>
-                      <th>ENERGY</th>
-                    </tr>
-                  </thead>
-                  <tbody id="bench-table-body">
-                    <tr>
-                      <td colspan="7" style="text-align: center; color: var(--text-dim);">No benchmark data recorded yet. Click "RUN BENCHMARK" to begin.</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <div class="cartouche-actions">
-                <button id="btn-bench-export-csv" class="btn-action" type="button" disabled>EXPORT CSV</button>
-                <button id="btn-bench-export-json" class="btn-action" type="button" disabled>EXPORT JSON</button>
-              </div>
-            </div>
           </div>
         </div>
       </section>
