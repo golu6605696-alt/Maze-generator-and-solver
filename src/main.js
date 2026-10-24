@@ -77,6 +77,7 @@ function initApp() {
     if (screen === AppScreen.LANDING) {
       screenLanding.classList.add('active');
       navLanding.classList.add('active');
+      requestAnimationFrame(repositionPortalHotspot);
     } else if (screen === AppScreen.CAMPAIGN) {
       screenCampaign.classList.add('active');
       navCampaign.classList.add('active');
@@ -283,6 +284,46 @@ function initApp() {
       app.toCampaign();
     });
   }
+
+  // -------------------------------------------------------------
+  // Precise Portal Hotspot Positioning (Locked to Artwork Vortex)
+  // -------------------------------------------------------------
+  function repositionPortalHotspot() {
+    const gateway = document.getElementById('section-gateway');
+    const hotspot = document.getElementById('portal-hotspot');
+    if (!gateway || !hotspot) return;
+
+    const w = gateway.clientWidth;
+    const h = gateway.clientHeight;
+    if (!w || !h) return;
+
+    // Exact geometric center of the circular portal opening in portal_realm.jpg (1024 x 576):
+    // Horizontal center: 713 / 1024 = 69.6289%
+    // Vertical center: 280 / 576 = 48.6111%
+    // Inner circular aperture diameter: 230px in 1024x576 resolution
+    const normX = 713 / 1024;
+    const normY = 280 / 576;
+
+    // Responsive scaling matching background-size: cover
+    const scale = Math.max(w / 1024, h / 576);
+    const diameter = Math.round(230 * scale);
+
+    // With background-position: 69.63% 48.61%, the target on screen is locked at (w * normX, h * normY)
+    const portalX = w * normX;
+    const portalY = h * normY;
+
+    hotspot.style.left = `${portalX.toFixed(2)}px`;
+    hotspot.style.top = `${portalY.toFixed(2)}px`;
+    hotspot.style.width = `${diameter}px`;
+    hotspot.style.height = `${diameter}px`;
+    hotspot.style.right = 'auto';
+    hotspot.style.bottom = 'auto';
+  }
+
+  window.addEventListener('resize', repositionPortalHotspot);
+  window.addEventListener('orientationchange', repositionPortalHotspot);
+  requestAnimationFrame(repositionPortalHotspot);
+  setTimeout(repositionPortalHotspot, 100);
 
   // Mini Animated Preview on Landing Page
   function startHeroMiniMaze() {

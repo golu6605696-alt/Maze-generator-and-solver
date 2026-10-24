@@ -391,23 +391,15 @@ body {
 
 .fantasy-artwork-img {
   position: absolute;
-  top: -5%;
-  left: -5%;
-  width: 110%;
-  height: 110%;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   background-image: url('portal_realm.jpg');
   background-size: cover;
-  background-position: 68% 42%;
+  background-position: 69.63% 48.61%;
   background-repeat: no-repeat;
   filter: saturate(1.1) contrast(1.05) brightness(0.9);
   transform: translateZ(0);
-  animation: heroArtDrift 30s ease-in-out infinite alternate;
-}
-
-@keyframes heroArtDrift {
-  0% { transform: scale(1) translate(0, 0); }
-  50% { transform: scale(1.03) translate(-1%, -0.8%); }
-  100% { transform: scale(1.01) translate(-0.5%, 0.5%); }
 }
 
 /* Stars Twinkle Layer */
@@ -490,10 +482,10 @@ body {
    ----------------------------------------- */
 .portal-hotspot {
   position: absolute;
-  left: 68%;
-  top: 42%;
-  width: 200px;
-  height: 200px;
+  left: 69.63%;
+  top: 48.61%;
+  width: 230px;
+  height: 230px;
   transform: translate(-50%, -50%);
   z-index: 5;
   border-radius: 50%;
@@ -1273,22 +1265,21 @@ body {
   }
 
   .fantasy-artwork-img {
-    background-position: 65% 25%;
+    background-position: 69.63% 48.61%;
   }
 
   .portal-hotspot {
-    position: relative;
-    right: auto;
-    top: auto;
-    transform: none;
-    margin: 20px auto 10px;
-    width: 180px;
-    height: 180px;
+    position: absolute;
+    left: 69.63%;
+    top: 48.61%;
+    transform: translate(-50%, -50%);
+    width: min(230px, 45vw);
+    height: min(230px, 45vw);
   }
 
   .portal-hotspot:hover,
   .portal-hotspot.cta-hovered {
-    transform: scale(1.08);
+    transform: translate(-50%, -50%) scale(1.08);
   }
 
   .fantasy-vignette-overlay {
