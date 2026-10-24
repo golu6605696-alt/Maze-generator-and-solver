@@ -7,32 +7,23 @@
   <meta name="description" content="Explore procedural mazes, navigate fog of war, race algorithmic bots, and duel friends on one keyboard.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Fraunces:opsz,wght@9..144,600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="index.css">
 </head>
 <body>
   <!-- Ambient Interactive Dynamic Maze Background (Reacts to Scroll & Parallax) -->
   <canvas id="bg-maze-canvas" class="bg-maze-canvas" aria-hidden="true"></canvas>
 
-  <!-- Entering Maze World 3D Portal Intro Gate -->
-  <div id="maze-portal-intro" class="maze-portal-intro" role="dialog" aria-label="Entering Maze Realm" aria-modal="true">
-    <div class="portal-viewport">
-      <div class="portal-tunnel">
-        <div class="portal-ring ring-1"></div>
-        <div class="portal-ring ring-2"></div>
-        <div class="portal-ring ring-3"></div>
-        <div class="portal-ring ring-4"></div>
-        <div class="portal-ring ring-5"></div>
-        <div class="portal-core">
-          <div class="portal-rune">🧭</div>
-          <div class="portal-shockwave"></div>
-        </div>
-      </div>
-      <div class="portal-hud">
-        <div class="portal-hud-badge">✦ ENTERING MAZE REALM ✦</div>
-        <div class="portal-hud-title">WARPING INTO PROCEDURAL LABYRINTH...</div>
-        <div class="portal-hud-hint">Click anywhere to skip</div>
-      </div>
+  <!-- Cinematic Portal Transition Flash Overlay (Triggered on ENTER THE WORLD) -->
+  <div id="portal-transition-overlay" class="portal-transition-overlay" aria-hidden="true" style="display: none;">
+    <div class="portal-surge-ring ring-1"></div>
+    <div class="portal-surge-ring ring-2"></div>
+    <div class="portal-surge-ring ring-3"></div>
+    <div class="portal-flash-core"></div>
+    <div class="portal-transition-hud">
+      <span class="portal-hud-rune">✦</span>
+      <span class="portal-hud-text">PASSING THROUGH THE GATEWAY...</span>
+      <span class="portal-hud-rune">✦</span>
     </div>
   </div>
 
@@ -54,7 +45,7 @@
       </div>
 
       <nav class="masthead-nav">
-        <button id="nav-landing" class="nav-tab active" type="button">HOME</button>
+        <button id="nav-landing" class="nav-tab active" type="button">GATEWAY</button>
         <button id="nav-expedition" class="nav-tab" type="button">PLAY MAZE 🎮</button>
         <button id="nav-campaign" class="nav-tab" type="button">QUEST MAP</button>
       </nav>
@@ -73,86 +64,227 @@
     <main class="viewport">
       <!-- 0. SCREEN: LANDING PAGE -->
       <section id="screen-landing" class="app-screen active">
-        <div class="landing-hero-container">
-          <!-- Hero Header -->
-          <div class="hero-header-box">
-            <span class="hero-tag">ARCADE MAZE</span>
-            <h2 class="hero-title">SOLVE, RACE & EXPLORE</h2>
-            <p class="hero-desc">
-              Generate custom procedural mazes, try to navigate them yourself, or let BFS, DFS, and Backtracking find the optimal path in real time!
-            </p>
-            <div style="margin-top: 16px;">
-              <button id="btn-hero-play-instant" class="btn-primary-brass pulse-button" style="font-size: 15px; padding: 12px 28px;" type="button">🎲 PLAY NOW (GENERATE & SOLVE) ▶</button>
+        <div class="fantasy-landing-wrapper">
+          <!-- SECTION 1: THE GATEWAY (Full-screen Cinematic Hero) -->
+          <section id="section-gateway" class="fantasy-hero-viewport" aria-label="The Gateway to the Maze">
+            <!-- Background Layer with parallax positioning -->
+            <div class="fantasy-artwork-layer" aria-hidden="true">
+              <div class="fantasy-artwork-img"></div>
+              <div class="fantasy-stars-twinkle"></div>
+              <div class="fantasy-fog-band fog-band-1"></div>
+              <div class="fantasy-fog-band fog-band-2"></div>
+              <div class="fantasy-floating-particles">
+                <span class="particle p1">✦</span>
+                <span class="particle p2">·</span>
+                <span class="particle p3">✦</span>
+                <span class="particle p4">✧</span>
+                <span class="particle p5">·</span>
+                <span class="particle p6">✦</span>
+              </div>
             </div>
-          </div>
 
-          <!-- Interactive Mini-Maze Radar -->
-          <div class="hero-preview-card">
-            <div class="preview-header">
-              <span class="preview-badge">LIVE RADAR</span>
-              <span class="preview-status">🟢 SOLVER SEARCHING...</span>
+            <!-- Interactive Portal Hotspot over the right-side portal arch -->
+            <div id="portal-hotspot" class="portal-hotspot" role="button" tabindex="0" title="Click to enter the portal">
+              <div class="portal-swirl-aura"></div>
+              <div class="portal-energy-ring"></div>
+              <div class="portal-core-glow"></div>
+              <div class="portal-rune-emblem">✦</div>
+              <span class="portal-hover-hint">CLICK TO ENTER</span>
             </div>
-            <div class="preview-canvas-box">
-              <canvas id="canvas-hero-preview" width="280" height="280"></canvas>
-            </div>
-            <p class="preview-caption">Breadth-First Search ripple finding the golden exit.</p>
-          </div>
 
-          <!-- 2 Game Mode Cards with Direct Buttons -->
-          <div class="landing-cards-grid">
-            <!-- Card 1: Solo Adventure -->
-            <div id="card-go-adventure" class="launch-card adventure-card" role="button" tabindex="0">
-              <div class="card-icon-bubble">🧩</div>
-              <div class="card-text-block">
-                <span class="card-category">CLASSIC PLAY</span>
-                <h3 class="card-title">PLAY & SOLVE MAZE</h3>
-                <p class="card-desc">100% visible maze! Walk to the red exit, or click Solve to reveal the path using BFS, DFS & Backtracking.</p>
-                <div class="card-badges">
-                  <span class="mini-badge">Easy, Med, Hard</span>
-                  <span class="mini-badge">Instant Solve</span>
+            <!-- Dark Gradient & Vignette Overlay behind hero content -->
+            <div class="fantasy-vignette-overlay" aria-hidden="true"></div>
+
+            <!-- Left-aligned Hero Content -->
+            <div class="fantasy-hero-container">
+              <div class="fantasy-hero-content">
+                <div class="fantasy-eyebrow-badge">
+                  <span class="badge-gem">◆</span>
+                  <span class="badge-text">THE LOST REALM AWAITS</span>
+                  <span class="badge-gem">◆</span>
+                </div>
+
+                <h2 class="fantasy-hero-title">
+                  <span class="title-line title-enter">ENTER THE</span>
+                  <span class="title-line title-maze">MAZE</span>
+                </h2>
+
+                <p class="fantasy-hero-subtext">
+                  One labyrinth. Countless paths. One mission to save the world.
+                </p>
+
+                <div class="fantasy-hero-actions">
+                  <button id="btn-enter-world-main" class="fantasy-cta-primary" type="button" aria-label="Enter the World">
+                    <span class="cta-glow-bg"></span>
+                    <span class="cta-content">
+                      <span class="cta-bracket">[</span>
+                      <span class="cta-text">ENTER THE WORLD</span>
+                      <span class="cta-arrow">→</span>
+                      <span class="cta-bracket">]</span>
+                    </span>
+                  </button>
+
+                  <a href="#section-labyrinth" id="link-explore-labyrinth" class="fantasy-link-secondary">
+                    <span class="link-label">Explore the Labyrinth</span>
+                    <span class="link-arrow">↓</span>
+                  </a>
+                </div>
+
+                <!-- Navigation hints / keystroke guide -->
+                <div class="fantasy-hero-features">
+                  <div class="feature-chip">
+                    <span class="chip-icon">⚡</span>
+                    <span class="chip-text">Real-Time DSA Solvers</span>
+                  </div>
+                  <div class="feature-chip">
+                    <span class="chip-icon">🗺️</span>
+                    <span class="chip-text">15 Campaign Stages</span>
+                  </div>
+                  <div class="feature-chip">
+                    <span class="chip-icon">🎮</span>
+                    <span class="chip-text">Instant Play</span>
+                  </div>
                 </div>
               </div>
-              <button class="card-action-btn" type="button">PLAY MAZE ▶</button>
             </div>
 
-            <!-- Card 2: World Quest Map -->
-            <div id="card-go-campaign" class="launch-card campaign-card" role="button" tabindex="0">
-              <div class="card-icon-bubble">🗺️</div>
-              <div class="card-text-block">
-                <span class="card-category">CAMPAIGN</span>
-                <h3 class="card-title">WORLD QUEST MAP</h3>
-                <p class="card-desc">15 progressive stages across 5 worlds. Earn up to 3 stars per level.</p>
-                <div class="card-badges">
-                  <span class="mini-badge">15 Levels</span>
-                  <span class="mini-badge">⭐⭐⭐ Stars</span>
+            <!-- Scroll indicator at bottom of viewport -->
+            <div class="scroll-down-cue" aria-hidden="true">
+              <div class="scroll-mouse">
+                <div class="scroll-wheel"></div>
+              </div>
+              <span class="scroll-cue-text">SCROLL TO DISCOVER</span>
+            </div>
+          </section>
+
+          <!-- SECTION 2: THE LABYRINTH -->
+          <section id="section-labyrinth" class="fantasy-labyrinth-section" aria-label="The Labyrinth Secrets">
+            <div class="section-container">
+              <div class="section-header-centered">
+                <span class="section-eyebrow">CHRONICLES OF THE ANCIENTS</span>
+                <h3 class="section-quote">“Every path tells a story.”</h3>
+                <p class="section-desc">
+                  Beyond the celestial arch lies a labyrinth forged by arcane geometers.
+                  Its stone walls twist with living algorithms, ancient traps, and relics of power.
+                </p>
+              </div>
+
+              <div class="labyrinth-cards-grid">
+                <!-- Card 1: The Shifting Realm -->
+                <div class="lore-card">
+                  <div class="lore-card-glow"></div>
+                  <div class="lore-card-header">
+                    <span class="lore-icon">🏛️</span>
+                    <span class="lore-tag">PROCEDURAL GEOMETRY</span>
+                  </div>
+                  <h4 class="lore-title">The Shifting Realm</h4>
+                  <p class="lore-body">
+                    Every descent carves a virgin labyrinth. Powered by recursive backtracker, Prim's stonecraft, and Wilson's uniform spanning trees, no two trials are ever identical.
+                  </p>
+                  <div class="lore-specs">
+                    <span class="spec-pill">Infinite Variances</span>
+                    <span class="spec-pill">Perfect Mazes</span>
+                  </div>
+                </div>
+
+                <!-- Card 2: Ancestral Wayfinders (With Live BFS Radar) -->
+                <div class="lore-card lore-card-featured">
+                  <div class="lore-card-glow"></div>
+                  <div class="lore-card-header">
+                    <span class="lore-icon">🧭</span>
+                    <span class="lore-tag">ANCESTRAL WAYFINDERS</span>
+                  </div>
+                  <h4 class="lore-title">Algorithmic Insight</h4>
+                  <p class="lore-body">
+                    When lost in the gloom, summon the ancient wayfinders: Breadth-First ripples, Depth-First pioneers, and Dijkstra's weighted navigators illuminate the true exit.
+                  </p>
+                  <div class="radar-preview-container">
+                    <div class="radar-header">
+                      <span class="radar-status-dot"></span>
+                      <span class="radar-label">LIVE RADAR SCOUT</span>
+                    </div>
+                    <canvas id="canvas-hero-preview" width="240" height="240" aria-label="Live maze solver radar"></canvas>
+                  </div>
+                </div>
+
+                <!-- Card 3: The 15 Realm Trials -->
+                <div class="lore-card">
+                  <div class="lore-card-glow"></div>
+                  <div class="lore-card-header">
+                    <span class="lore-icon">🌌</span>
+                    <span class="lore-tag">CAMPAIGN SAGA</span>
+                  </div>
+                  <h4 class="lore-title">The 15 Realm Trials</h4>
+                  <p class="lore-body">
+                    From the sunlit Meadows of Aethelgard to the Abyssal Core, conquer 5 distinct realms. Master stamina, recover glowing lanterns, and earn 3-star honors.
+                  </p>
+                  <div class="lore-specs">
+                    <span class="spec-pill">5 Mythic Worlds</span>
+                    <span class="spec-pill">Star Mastery</span>
+                  </div>
                 </div>
               </div>
-              <button class="card-action-btn" type="button">OPEN MAP ▶</button>
-            </div>
-          </div>
 
-          <!-- Concise How-to-Play Guide -->
-          <div class="how-to-play-box">
-            <h4 class="how-title">HOW TO PLAY</h4>
-            <div class="steps-row">
-              <div class="step-item">
-                <span class="step-num">1</span>
-                <strong>Move:</strong> <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or Arrows through open passages.
-              </div>
-              <div class="step-item">
-                <span class="step-num">2</span>
-                <strong>Stamina:</strong> Each step costs energy (mud costs more). Don't reach zero!
-              </div>
-              <div class="step-item">
-                <span class="step-num">3</span>
-                <strong>Relics:</strong> 🍞 Rations restore energy, 🪔 Oil widens lantern light.
-              </div>
-              <div class="step-item">
-                <span class="step-num">4</span>
-                <strong>Goal:</strong> Reach the golden exit 🏆 before the phantoms.
+              <!-- Quick Gameplay Controls Strip -->
+              <div class="gameplay-cues-strip">
+                <div class="cue-item">
+                  <span class="cue-icon">⌨️</span>
+                  <div>
+                    <strong>Navigation:</strong> Use <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or Arrow keys to tread the corridors.
+                  </div>
+                </div>
+                <div class="cue-item">
+                  <span class="cue-icon">⚡</span>
+                  <div>
+                    <strong>Stamina & Relics:</strong> Gather rations 🍞 to replenish energy and oil 🪔 to widen your lantern radius.
+                  </div>
+                </div>
+                <div class="cue-item">
+                  <span class="cue-icon">🏆</span>
+                  <div>
+                    <strong>The Portal Exit:</strong> Reach the golden rune circle before your torch burns cold.
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          </section>
+
+          <!-- SECTION 3: BEGIN YOUR TRIAL -->
+          <section id="section-trial" class="fantasy-trial-section" aria-label="Begin Your Trial">
+            <div class="trial-backdrop" aria-hidden="true"></div>
+            <div class="trial-content-box">
+              <span class="trial-eyebrow">YOUR DESTINY AWAITS</span>
+              <h3 class="trial-heading">BEGIN YOUR TRIAL</h3>
+              <p class="trial-subtext">
+                The runes have aligned. Step through the celestial gateway and claim your place among the realm's legendary navigators.
+              </p>
+
+              <div class="trial-actions">
+                <button id="btn-begin-trial" class="fantasy-cta-primary pulse-glow" type="button">
+                  <span class="cta-glow-bg"></span>
+                  <span class="cta-content">
+                    <span class="cta-bracket">[</span>
+                    <span class="cta-text">ENTER THE WORLD & PLAY</span>
+                    <span class="cta-arrow">→</span>
+                    <span class="cta-bracket">]</span>
+                  </span>
+                </button>
+
+                <button id="btn-open-quest-map" class="fantasy-cta-secondary" type="button">
+                  <span class="cta-content">
+                    <span class="cta-icon">🗺️</span>
+                    <span class="cta-text">WORLD QUEST MAP</span>
+                  </span>
+                </button>
+              </div>
+
+              <div class="trial-status-pills">
+                <span class="status-pill">✦ Instant Maze Generation</span>
+                <span class="status-pill">✦ Instant BFS / DFS Solve</span>
+                <span class="status-pill">✦ Zero Download Required</span>
+              </div>
+            </div>
+          </section>
         </div>
       </section>
 

@@ -178,49 +178,97 @@ function initApp() {
   });
 
   // -------------------------------------------------------------
-  // Landing Page Hero & Interactive Preview
+  // Fantasy Landing Page Hero & Interactive Portal
   // -------------------------------------------------------------
-  const btnHeroPlayInstant = document.getElementById('btn-hero-play-instant');
-  const cardGoAdventure = document.getElementById('card-go-adventure');
-  const cardGoCampaign = document.getElementById('card-go-campaign');
+  const btnEnterWorldMain = document.getElementById('btn-enter-world-main');
+  const portalHotspot = document.getElementById('portal-hotspot');
+  const btnBeginTrial = document.getElementById('btn-begin-trial');
+  const btnOpenQuestMap = document.getElementById('btn-open-quest-map');
+  const linkExploreLabyrinth = document.getElementById('link-explore-labyrinth');
 
-  if (btnHeroPlayInstant) {
-    btnHeroPlayInstant.addEventListener('click', () => {
-      sound.play('click');
+  function triggerPortalTransitionAndEnter() {
+    sound.play('win');
+    const overlay = document.getElementById('portal-transition-overlay');
+    if (overlay) {
+      overlay.style.display = 'flex';
+      overlay.classList.remove('fade-out');
+      overlay.classList.add('active');
+
+      setTimeout(() => {
+        app.transition(AppScreen.EXPEDITION_PLAY);
+        startSimpleMaze(simpleDifficulty);
+        overlay.classList.add('fade-out');
+        setTimeout(() => {
+          overlay.classList.remove('active', 'fade-out');
+          overlay.style.display = 'none';
+        }, 550);
+      }, 650);
+    } else {
       app.transition(AppScreen.EXPEDITION_PLAY);
       startSimpleMaze(simpleDifficulty);
+    }
+  }
+
+  // Primary CTA click & hover
+  if (btnEnterWorldMain) {
+    btnEnterWorldMain.addEventListener('click', () => {
+      triggerPortalTransitionAndEnter();
+    });
+
+    if (portalHotspot) {
+      btnEnterWorldMain.addEventListener('mouseenter', () => {
+        portalHotspot.classList.add('cta-hovered');
+      });
+      btnEnterWorldMain.addEventListener('mouseleave', () => {
+        portalHotspot.classList.remove('cta-hovered');
+      });
+      btnEnterWorldMain.addEventListener('focus', () => {
+        portalHotspot.classList.add('cta-hovered');
+      });
+      btnEnterWorldMain.addEventListener('blur', () => {
+        portalHotspot.classList.remove('cta-hovered');
+      });
+    }
+  }
+
+  // Portal Hotspot direct click
+  if (portalHotspot) {
+    portalHotspot.addEventListener('click', () => {
+      triggerPortalTransitionAndEnter();
+    });
+    portalHotspot.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        triggerPortalTransitionAndEnter();
+      }
     });
   }
 
-  if (cardGoAdventure) {
-    cardGoAdventure.addEventListener('click', () => {
+  // Section 2 scroll link
+  if (linkExploreLabyrinth) {
+    linkExploreLabyrinth.addEventListener('click', (e) => {
+      e.preventDefault();
       sound.play('click');
-      app.transition(AppScreen.EXPEDITION_PLAY);
-      startSimpleMaze(simpleDifficulty);
+      const targetSec = document.getElementById('section-labyrinth');
+      if (targetSec) {
+        targetSec.scrollIntoView({ behavior: 'smooth' });
+      }
     });
   }
-  if (cardGoCampaign) {
-    cardGoCampaign.addEventListener('click', () => {
+
+  // Section 3 CTA buttons
+  if (btnBeginTrial) {
+    btnBeginTrial.addEventListener('click', () => {
+      triggerPortalTransitionAndEnter();
+    });
+  }
+
+  if (btnOpenQuestMap) {
+    btnOpenQuestMap.addEventListener('click', () => {
       sound.play('click');
       app.toCampaign();
     });
   }
-
-  // Also bind any direct button clicks inside cards
-  document.querySelectorAll('.card-action-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      sound.play('click');
-      const card = btn.closest('.launch-card');
-      if (!card) return;
-      if (card.id === 'card-go-adventure') {
-        app.transition(AppScreen.EXPEDITION_PLAY);
-        startSimpleMaze(simpleDifficulty);
-      } else if (card.id === 'card-go-campaign') {
-        app.toCampaign();
-      }
-    });
-  });
 
   // Mini Animated Preview on Landing Page
   function startHeroMiniMaze() {
