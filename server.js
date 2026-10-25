@@ -65,6 +65,21 @@ const server = http.createServer((req, res) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`Maze Visualizer running at http://localhost:${PORT}`);
+let currentPort = Number(PORT);
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    currentPort += 1;
+    console.warn(`Port ${currentPort - 1} is already in use. Trying port ${currentPort}...`);
+    server.listen(currentPort, () => {
+      console.log(`Maze Visualizer running at http://localhost:${currentPort}`);
+    });
+  } else {
+    console.error('Server error:', err);
+  }
 });
+
+server.listen(currentPort, () => {
+  console.log(`Maze Visualizer running at http://localhost:${currentPort}`);
+});
+

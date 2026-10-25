@@ -18,10 +18,11 @@ import { exportRunJson } from './app/maze_io.js';
 import { Grid } from './core/grid.js';
 import { Rng } from './structures/rng.js';
 import { getGenerator } from './core/generators/index.js';
-import { getSolver } from './core/solvers/index.js';
+import { getSolver, runSolver } from './core/solvers/index.js';
 import { drain } from './core/iter.js';
 import { braid } from './core/braid.js';
 import { buildMaze } from './core/pipeline.js';
+import { calculatePerformanceStars } from './core/scoring.js';
 
 let isAppInitialized = false;
 
@@ -800,6 +801,8 @@ function initApp() {
   let simpleSolving = false;
   let simpleSolveTimer = null;
   let simpleWon = false;
+  let simpleStartTime = 0;
+  let simpleOptimalSteps = 25;
 
   const btnGenerateMaze = document.getElementById('btn-generate-maze');
   const btnSolveMaze = document.getElementById('btn-solve-maze');
@@ -821,9 +824,19 @@ function initApp() {
   const victoryModalTitle = document.getElementById('victory-modal-title');
   const victoryModalDesc = document.getElementById('victory-modal-desc');
   const victoryStatSteps = document.getElementById('victory-stat-steps');
+  const victoryStatTime = document.getElementById('victory-stat-time');
+  const vMetricItemTime = document.getElementById('v-metric-item-time');
   const victoryStatDiff = document.getElementById('victory-stat-diff');
   const victoryStatRating = document.getElementById('victory-stat-rating');
+  const victoryStatStepsLabel = document.getElementById('victory-stat-steps-label');
+  const victoryStatTimeLabel = document.getElementById('victory-stat-time-label');
+  const victoryStatDiffLabel = document.getElementById('victory-stat-diff-label');
+  const victoryStatRatingLabel = document.getElementById('victory-stat-rating-label');
   const victoryConfettiCanvas = document.getElementById('victory-confetti-canvas');
+  const vStar1 = document.getElementById('v-star-1');
+  const vStar2 = document.getElementById('v-star-2');
+  const vStar3 = document.getElementById('v-star-3');
+  const victoryStarsCaption = document.getElementById('victory-stars-caption');
 
   let confettiAnimId = null;
 
@@ -920,39 +933,93 @@ function initApp() {
       btnVictoryCampaign.style.display = isCampaign ? 'inline-block' : 'none';
     }
 
+    // Determine star count (1, 2, or 3)
+    let starCount = 3;
+    if (typeof options.stars === 'number') {
+      starCount = Math.min(3, Math.max(1, options.stars));
+    } else if (typeof options.stars === 'string') {
+      starCount = options.stars.includes('⭐⭐⭐') ? 3 : (options.stars.includes('⭐⭐') ? 2 : 1);
+    }
+
     if (isCampaign) {
+      if (vMetricItemTime) vMetricItemTime.style.display = 'none';
+      if (victoryStatStepsLabel) victoryStatStepsLabel.textContent = 'STEPS';
+      if (victoryStatDiffLabel) victoryStatDiffLabel.textContent = 'TARGET PAR';
+      if (victoryStatRatingLabel) victoryStatRatingLabel.textContent = 'RATING';
+      if (btnVictoryRetry) btnVictoryRetry.textContent = '↺ REPLAY LEVEL';
+
       const lvl = campaignStore.findLevel(options.levelId);
       const lvlName = lvl ? lvl.name : `Level ${options.levelId}`;
       if (victoryBadge) victoryBadge.textContent = `🌟 STAGE ${options.levelId} CONQUERED`;
       if (victoryModalTitle) victoryModalTitle.textContent = `${lvlName.toUpperCase()} CLEARED!`;
-      if (victoryModalDesc) {
-        victoryModalDesc.innerHTML = `Sensational! You conquered <strong>${lvlName}</strong> in <strong>${options.steps} steps</strong> and <strong>${options.time}s</strong> (Par: ${options.parTime}s)! ⭐ Rating: <strong>${options.stars}</strong>`;
-      }
+      if (victoryModalDesc) victoryModalDesc.textContent = `You conquered ${lvlName}!`;
       if (victoryStatSteps) victoryStatSteps.textContent = String(options.steps || 0);
       if (victoryStatDiff) victoryStatDiff.textContent = `PAR ${options.parTime}s`;
-      if (victoryStatRating) victoryStatRating.textContent = options.stars || '⭐⭐⭐';
+      if (victoryStatRating) victoryStatRating.textContent = options.starsStr || (starCount === 3 ? '⭐⭐⭐' : (starCount === 2 ? '⭐⭐☆' : '⭐☆☆'));
       if (btnVictoryNew) btnVictoryNew.textContent = 'NEXT LEVEL ▶';
     } else if (isPlayer) {
+      if (vMetricItemTime) vMetricItemTime.style.display = 'flex';
+      if (victoryStatStepsLabel) victoryStatStepsLabel.textContent = 'STEPS';
+      if (victoryStatTimeLabel) victoryStatTimeLabel.textContent = 'TIME';
+      if (victoryStatDiffLabel) victoryStatDiffLabel.textContent = 'DIFFICULTY';
+      if (victoryStatRatingLabel) victoryStatRatingLabel.textContent = 'RATING';
+      if (btnVictoryRetry) btnVictoryRetry.textContent = '↺ REPLAY MAZE';
+
       if (btnVictoryNew) btnVictoryNew.textContent = '🎲 NEW MAZE';
-      if (victoryBadge) victoryBadge.textContent = '🏆 GOAL REACHED';
-      if (victoryModalTitle) victoryModalTitle.textContent = 'GAME COMPLETED!';
-      if (victoryModalDesc) {
-        victoryModalDesc.innerHTML = `Magnificent! You successfully navigated through the <strong>${diffUpper}</strong> maze and reached the goal in <strong>${options.steps} steps</strong>!`;
-      }
+      if (victoryBadge) victoryBadge.textContent = starCount === 3 ? '🌟 3-STAR MASTER' : (starCount === 2 ? '⭐ 2-STAR NAVIGATOR' : '⭐ 1-STAR CONQUEROR');
+      if (victoryModalTitle) victoryModalTitle.textContent = 'VICTORY!';
+      if (victoryModalDesc) victoryModalDesc.textContent = 'You successfully conquered the maze!';
+
+      const timeStr = typeof options.time === 'number' ? `${options.time}s` : (options.time || '0s');
+
       if (victoryStatSteps) victoryStatSteps.textContent = String(options.steps || 0);
+      if (victoryStatTime) victoryStatTime.textContent = timeStr;
       if (victoryStatDiff) victoryStatDiff.textContent = diffUpper;
-      if (victoryStatRating) victoryStatRating.textContent = 'VICTORY 🥇';
+      if (victoryStatRating) victoryStatRating.textContent = `${starCount} STARS 🌟`;
     } else {
-      if (btnVictoryNew) btnVictoryNew.textContent = '🎲 NEW MAZE';
-      if (victoryBadge) victoryBadge.textContent = '🤖 MAZE SOLVED';
-      if (victoryModalTitle) victoryModalTitle.textContent = 'MAZE SOLVED!';
+      // Auto-Solver Result
+      if (vMetricItemTime) vMetricItemTime.style.display = 'flex';
+      if (victoryStatStepsLabel) victoryStatStepsLabel.textContent = 'PATH STEPS';
+      if (victoryStatTimeLabel) victoryStatTimeLabel.textContent = 'TIME TAKEN';
+      if (victoryStatDiffLabel) victoryStatDiffLabel.textContent = 'EXPLORED';
+      if (victoryStatRatingLabel) victoryStatRatingLabel.textContent = 'ALGORITHM';
+
       const algo = options.algoName || 'Algorithm';
-      if (victoryModalDesc) {
-        victoryModalDesc.innerHTML = `<strong>${algo}</strong> successfully computed the optimal path of <strong>${options.steps} steps</strong> after exploring ${options.explored || 0} cells!`;
+      const algoShort = options.algoShortName || 'Solver';
+      const timeStr = options.timeFormatted || '0.5ms';
+      const stepsCount = options.steps || 0;
+      const hopsCount = options.hops || (stepsCount > 0 ? stepsCount - 1 : 0);
+      const exploredCount = options.explored || 0;
+
+      // Rate algorithm efficiency
+      if (algoShort === 'BFS') {
+        starCount = 3; // BFS guarantees optimal shortest path
+      } else {
+        const opt = simpleOptimalSteps || 25;
+        starCount = stepsCount <= Math.round(opt * 1.35) ? 3 : (stepsCount <= Math.round(opt * 2.2) ? 2 : 1);
       }
-      if (victoryStatSteps) victoryStatSteps.textContent = String(options.steps || 0);
-      if (victoryStatDiff) victoryStatDiff.textContent = diffUpper;
-      if (victoryStatRating) victoryStatRating.textContent = 'OPTIMAL 🎯';
+
+      if (btnVictoryNew) btnVictoryNew.textContent = '🎲 NEW MAZE';
+      if (btnVictoryRetry) btnVictoryRetry.textContent = '↺ WALK THIS MAZE';
+      if (victoryBadge) victoryBadge.textContent = `🤖 ${algoShort.toUpperCase()} SOLVED (${starCount}★)`;
+      if (victoryModalTitle) victoryModalTitle.textContent = `${algoShort.toUpperCase()} SOLVED!`;
+      if (victoryModalDesc) victoryModalDesc.textContent = `${algo} found the path to the exit!`;
+      if (victoryStatSteps) victoryStatSteps.textContent = String(stepsCount);
+      if (victoryStatTime) victoryStatTime.textContent = timeStr;
+      if (victoryStatDiff) victoryStatDiff.textContent = `${exploredCount} cells`;
+      if (victoryStatRating) victoryStatRating.textContent = options.algoPill || `${algoShort} 🎯`;
+    }
+
+    // Update the 3 Star Slots in Place of the Trophy
+    if (vStar1) vStar1.className = `v-star-slot slot-left ${starCount >= 1 ? 'earned' : 'unearned'}`;
+    if (vStar2) vStar2.className = `v-star-slot slot-center ${starCount >= 2 ? 'earned' : 'unearned'}`;
+    if (vStar3) vStar3.className = `v-star-slot slot-right ${starCount >= 3 ? 'earned' : 'unearned'}`;
+
+    if (victoryStarsCaption) {
+      const defaultCaption = starCount === 3
+        ? '⭐⭐⭐ 3 STARS - FLAWLESS!'
+        : (starCount === 2 ? '⭐⭐☆ 2 STARS - GREAT RUN!' : '⭐☆☆ 1 STAR - COMPLETED!');
+      victoryStarsCaption.textContent = options.starCaption || defaultCaption;
     }
 
     mazeVictoryOverlay.style.display = 'flex';
@@ -1024,6 +1091,7 @@ function initApp() {
     simpleWon = false;
     simpleSolving = false;
     simpleSteps = 0;
+    simpleStartTime = performance.now();
     if (playStepsCounter) playStepsCounter.textContent = '0';
 
     // Highlight active difficulty pill in UI
@@ -1039,6 +1107,15 @@ function initApp() {
     simpleGrid = grid;
     simpleScout = grid.start;
     simpleHeading = Wall.E;
+
+    // Calculate baseline optimal steps using BFS
+    try {
+      const bfs = getSolver('bfs');
+      const bfsRes = runSolver(bfs, grid, { weighted: false });
+      simpleOptimalSteps = bfsRes && bfsRes.path ? bfsRes.path.length : 25;
+    } catch {
+      simpleOptimalSteps = 25;
+    }
 
     // 2. Configure Classic Renderer (100% visible, crisp walls, green & red arrows)
     expRenderer.setGrid(grid);
@@ -1118,27 +1195,42 @@ function initApp() {
             steps: simpleSteps,
             time: elapsedSec,
             parTime,
-            stars: starStr,
+            stars: starsNum,
+            starsStr: starStr,
           });
         }, 250);
       } else {
+        const elapsedSec = Math.max(0.5, Math.round((performance.now() - (simpleStartTime || performance.now())) / 100) / 10);
+        const starPerf = calculatePerformanceStars({
+          steps: simpleSteps,
+          elapsedSec,
+          optimalSteps: simpleOptimalSteps,
+          difficulty: simpleDifficulty,
+        });
+
         if (mazeGuideBanner) {
           mazeGuideBanner.className = 'maze-guide-banner victory';
-          if (guideIcon) guideIcon.textContent = '🎉';
-          if (guideText) guideText.innerHTML = `<strong>CONGRATULATIONS!</strong> You reached the exit in <strong>${simpleSteps} steps</strong>! Click <strong>🎲 GENERATE MAZE</strong> to play again!`;
+          if (guideIcon) guideIcon.textContent = starPerf.stars === 3 ? '🌟' : '🎉';
+          if (guideText) guideText.innerHTML = `<strong>CONGRATULATIONS!</strong> Conquered in <strong>${simpleSteps} steps</strong> and <strong>${elapsedSec}s</strong>! Rating: <strong>${starPerf.starStr}</strong>!`;
         }
+
         setTimeout(() => {
           showMazeVictoryModal({
             type: 'player',
             steps: simpleSteps,
+            time: elapsedSec,
             difficulty: simpleDifficulty,
+            stars: starPerf.stars,
+            parTime: starPerf.parTime,
+            optimalSteps: starPerf.optimalSteps,
+            starCaption: `${starPerf.starStr} ${starPerf.stars} STARS - ${starPerf.reason.toUpperCase()}`,
           });
         }, 250);
       }
     }
   }
 
-  function solveCurrentMaze() {
+  function solveCurrentMaze(requestedAlgoId) {
     if (!simpleGrid) return;
     if (simpleSolveTimer) {
       clearInterval(simpleSolveTimer);
@@ -1147,13 +1239,16 @@ function initApp() {
     simpleSolving = true;
     sound.play('click');
 
-    const algoId = selectSolveAlgo ? selectSolveAlgo.value : 'bfs';
-    const algoNames = {
-      bfs: 'Breadth-First Search (BFS)',
-      dfs: 'Depth-First Search (DFS)',
-      wfl: 'Backtracking',
+    const algoId = requestedAlgoId || (selectSolveAlgo ? selectSolveAlgo.value : 'bfs');
+    const algoMeta = {
+      bfs: { name: 'Breadth-First Search (BFS)', short: 'BFS', pill: 'BFS 🎯' },
+      dfs: { name: 'Depth-First Search (DFS)', short: 'DFS', pill: 'DFS ⚡' },
+      bkt: { name: 'Backtracking Search', short: 'Backtrack', pill: 'BACKTRACK 🖐️' },
+      wfl: { name: 'Backtracking Search', short: 'Backtrack', pill: 'BACKTRACK 🖐️' },
     };
-    const algoName = algoNames[algoId] || 'Solver';
+    const meta = algoMeta[algoId] || algoMeta.bfs;
+    const algoName = meta.name;
+    const isBacktrack = (algoId === 'bkt' || algoId === 'wfl');
 
     // Clear previous search and paths
     expRenderer.clearSolution();
@@ -1161,7 +1256,11 @@ function initApp() {
     if (mazeGuideBanner) {
       mazeGuideBanner.className = 'maze-guide-banner solving';
       if (guideIcon) guideIcon.textContent = '🤖';
-      if (guideText) guideText.innerHTML = `Running <strong>${algoName}</strong>... Exploring maze corridors to find the exit!`;
+      if (guideText) {
+        guideText.innerHTML = isBacktrack
+          ? `<strong>${algoName}</strong> starting... Stepping down corridors, hitting dead ends, and backtracking!`
+          : `Running <strong>${algoName}</strong>... Exploring corridors to find the exit!`;
+      }
     }
 
     let solver;
@@ -1171,61 +1270,140 @@ function initApp() {
       solver = getSolver('bfs');
     }
 
+    // Measure exact algorithm computation time (milliseconds)
+    const computeStart = performance.now();
+    const headlessRes = runSolver(solver, simpleGrid, { weighted: false });
+    const computeTimeMs = Math.max(0.1, performance.now() - computeStart);
+
+    // Create generator iterator for visual step-by-step playback
     const iterator = solver.solve(simpleGrid, { weighted: false });
     const exploredCells = [];
+    const activeTrail = isBacktrack ? [simpleGrid.start] : [];
+    let currentHead = simpleGrid.start;
     let exploredCount = 0;
+    let stepCount = 0;
+    const visualStart = performance.now();
 
-    // Animate smoothly
-    const stepsPerTick = simpleSize <= 15 ? 3 : (simpleSize <= 25 ? 6 : 12);
+    // Natural human-like cadence (~38ms for Backtracking, ~32ms for BFS/DFS)
+    const animIntervalMs = isBacktrack ? 38 : 32;
 
     simpleSolveTimer = setInterval(() => {
       let isDone = false;
       let finalResult = null;
+      let step = null;
 
-      for (let s = 0; s < stepsPerTick; s++) {
+      // Fetch next meaningful step event
+      while (true) {
         const res = iterator.next();
         if (res.done) {
           isDone = true;
-          finalResult = res.value;
+          finalResult = res.value || headlessRes;
           break;
         }
-        const step = res.value;
-        if (step && typeof step.cell === 'number') {
-          exploredCells.push(step.cell);
-          exploredCount++;
+        step = res.value;
+        // In Backtracking, skip internal ENQUEUE events so every tick is a visible VISIT or BACKTRACK
+        if (isBacktrack && step && step.t === 'ENQUEUE') {
+          continue;
+        }
+        break;
+      }
+
+      if (step && typeof step.cell === 'number') {
+        stepCount++;
+
+        if (step.t === 'BACKTRACK') {
+          // Dead end reached! Backtrack and remove path cover box from this dead-end cell
+          const deadIdx = activeTrail.lastIndexOf(step.cell);
+          if (deadIdx >= 0) {
+            activeTrail.splice(deadIdx, 1);
+          } else if (activeTrail.length > 0) {
+            activeTrail.pop();
+          }
+          currentHead = activeTrail.length > 0 ? activeTrail[activeTrail.length - 1] : step.cell;
+
+          // Sound effect on dead-end backtrack
+          if (stepCount % 3 === 0) sound.play('thud');
+
+          if (mazeGuideBanner && guideText) {
+            guideText.innerHTML = `<strong>${algoName}</strong>: Dead end reached! ↩ Backtracking & removing path box to try another route...`;
+          }
+        } else {
+          // VISIT or standard step forward: place path cover box
+          if (!exploredCells.includes(step.cell)) {
+            exploredCells.push(step.cell);
+            exploredCount++;
+          }
+
+          if (isBacktrack) {
+            if (!activeTrail.includes(step.cell)) {
+              activeTrail.push(step.cell);
+            }
+          } else {
+            // For BFS / DFS, activeTrail displays the expanding frontier
+            if (!activeTrail.includes(step.cell)) {
+              activeTrail.push(step.cell);
+            }
+          }
+
+          currentHead = step.cell;
+
+          // Soft step sound
+          if (stepCount % 4 === 0) sound.play('step');
+
+          if (mazeGuideBanner && guideText && stepCount % 5 === 0) {
+            guideText.innerHTML = isBacktrack
+              ? `<strong>${algoName}</strong>: Exploring corridor... Active Trail: <strong>${activeTrail.length} cells</strong>`
+              : `Running <strong>${algoName}</strong>... Explored <strong>${exploredCount} cells</strong>`;
+          }
         }
       }
 
-      expRenderer.setSolution([], exploredCells);
+      // Re-render maze canvas with theme-colored path-finding boxes and seeker head
+      expRenderer.setSolution([], exploredCells, activeTrail, currentHead);
 
       if (isDone) {
         clearInterval(simpleSolveTimer);
         simpleSolveTimer = null;
         simpleSolving = false;
 
-        if (finalResult && finalResult.found && Array.isArray(finalResult.path)) {
-          // Draw the red solution path like Image 2!
-          expRenderer.setSolution(finalResult.path, exploredCells);
+        const effectiveResult = (finalResult && finalResult.found && Array.isArray(finalResult.path)) ? finalResult : headlessRes;
+
+        if (effectiveResult && effectiveResult.found && Array.isArray(effectiveResult.path)) {
+          // Reveal glowing completed solution path in theme styling
+          expRenderer.setSolution(effectiveResult.path, exploredCells, [], -1);
           sound.play('relic');
+
+          const pathLen = effectiveResult.path.length;
+          const hops = Math.max(0, pathLen - 1);
+          const timeFormatted = computeTimeMs < 1 ? `${computeTimeMs.toFixed(2)}ms` : `${computeTimeMs.toFixed(1)}ms`;
+          const visualSec = Math.max(0.2, (performance.now() - visualStart) / 1000).toFixed(1);
 
           if (mazeGuideBanner) {
             mazeGuideBanner.className = 'maze-guide-banner solved';
             if (guideIcon) guideIcon.textContent = '✨';
-            if (guideText) guideText.innerHTML = `<strong>${algoName} Solution:</strong> Found path of <strong>${finalResult.path.length} steps</strong> (explored ${exploredCount} cells). Red solution path revealed! Click <strong>↺ RETRY</strong> to walk it yourself!`;
+            if (guideText) {
+              guideText.innerHTML = `<strong>${algoName} Solved!</strong> Path: <strong>${pathLen} steps</strong> (${hops} hops) • Explored: <strong>${exploredCount} cells</strong> • Time: <strong>${timeFormatted}</strong> (${visualSec}s animated)! Click <strong>↺ RETRY</strong> to walk it!`;
+            }
           }
 
           setTimeout(() => {
             showMazeVictoryModal({
               type: 'solver',
+              algoId,
               algoName,
-              steps: finalResult.path.length,
+              algoShortName: meta.short,
+              algoPill: meta.pill,
+              steps: pathLen,
+              hops,
               explored: exploredCount,
+              timeFormatted,
+              visualSec,
               difficulty: simpleDifficulty,
             });
-          }, 450);
+          }, 350);
         }
       }
-    }, 20);
+    }, animIntervalMs);
   }
 
   function retryCurrentMaze() {
@@ -1240,6 +1418,7 @@ function initApp() {
     simpleScout = simpleGrid.start;
     simpleHeading = Wall.E;
     simpleSteps = 0;
+    simpleStartTime = performance.now();
     if (playStepsCounter) playStepsCounter.textContent = '0';
 
     if (currentCampaignLevelId !== null) {
@@ -1325,6 +1504,22 @@ function initApp() {
 
   if (btnSolveMaze) {
     btnSolveMaze.addEventListener('click', () => solveCurrentMaze());
+  }
+
+  if (selectSolveAlgo) {
+    selectSolveAlgo.addEventListener('change', () => {
+      sound.play('click');
+      const algoId = selectSolveAlgo.value;
+      const names = {
+        bfs: 'BFS (Breadth-First Search)',
+        dfs: 'DFS (Depth-First Search)',
+        bkt: 'Backtracking Search',
+      };
+      if (mazeGuideBanner && !simpleSolving) {
+        if (guideIcon) guideIcon.textContent = '💡';
+        if (guideText) guideText.innerHTML = `Selected <strong>${names[algoId] || 'Solver'}</strong>. Click <strong>💡 AUTO SOLVE</strong> to solve with this option!`;
+      }
+    });
   }
 
   if (btnRetryMaze) {

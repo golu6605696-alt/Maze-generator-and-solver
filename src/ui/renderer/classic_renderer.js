@@ -17,7 +17,7 @@ export class ClassicMazeRenderer {
    */
   constructor(canvas) {
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
+    this.ctx = canvas && typeof canvas.getContext === 'function' ? canvas.getContext('2d') : null;
 
     this.grid = null;
     this.cellPx = 28;
@@ -28,13 +28,96 @@ export class ClassicMazeRenderer {
     this.playerTrail = [];
     this.solutionPath = [];
     this.exploredCells = [];
+    this.activeTrail = [];
+    this.currentHead = -1;
 
-    this.theme = 'classic'; // 'classic' (white paper) or 'dark'
+    this.theme = 'terminal'; // 'terminal', 'sheet', 'cyber', 'jungle'
   }
 
   setTheme(theme) {
-    this.theme = theme;
+    this.theme = theme || 'terminal';
     this.render();
+  }
+
+  getThemeColors() {
+    let t = this.theme || 'terminal';
+    if (t === 'dark') t = 'terminal';
+    if (t === 'classic') t = 'sheet';
+
+    switch (t) {
+      case 'sheet': // 📜 Treasure Parchment / Aged Paper
+        return {
+          bg: '#f7f2e8',                      // Canvas outer background
+          mazeBg: '#ede4d1',                  // Inner maze paper background
+          wallColor: '#2d261e',               // Crisp dark sepia charcoal walls
+          exploredFill: 'rgba(180, 83, 9, 0.12)',
+          exploredBorder: 'rgba(180, 83, 9, 0.30)',
+          pathBoxFill: 'rgba(180, 83, 9, 0.40)', // Terracotta path-finding box
+          pathBoxBorder: 'rgba(180, 83, 9, 0.85)',
+          headFill: '#b45309',                // Warm sepia seeker head
+          headGlow: 'rgba(180, 83, 9, 0.45)',
+          headBorder: '#ffffff',
+          solutionLine: '#dc2626',            // Crimson solution path line
+          playerTrail: '#b45309',
+          arrowEntrance: '#15803d',
+          arrowExit: '#dc2626',
+        };
+
+      case 'cyber': // 🌌 Arcade Neon
+        return {
+          bg: '#070913',                      // Deep midnight canvas
+          mazeBg: '#0f1326',                  // Dark cyber indigo interior
+          wallColor: '#00f5ff',               // Glowing cyan walls
+          exploredFill: 'rgba(0, 245, 255, 0.12)',
+          exploredBorder: 'rgba(0, 245, 255, 0.35)',
+          pathBoxFill: 'rgba(0, 245, 255, 0.42)', // Electric cyan path-finding box
+          pathBoxBorder: 'rgba(0, 245, 255, 0.90)',
+          headFill: '#ff007f',                // Hot pink neon seeker orb
+          headGlow: 'rgba(255, 0, 127, 0.65)',
+          headBorder: '#ffffff',
+          solutionLine: '#ff007f',            // Laser pink solution line
+          playerTrail: '#00f5ff',
+          arrowEntrance: '#39ff14',
+          arrowExit: '#ff007f',
+        };
+
+      case 'jungle': // 🌿 Emerald Explorer
+        return {
+          bg: '#05130e',                      // Deep night rainforest canvas
+          mazeBg: '#0c241b',                  // Dark moss emerald interior
+          wallColor: '#34d399',               // Emerald green walls
+          exploredFill: 'rgba(52, 211, 153, 0.12)',
+          exploredBorder: 'rgba(52, 211, 153, 0.35)',
+          pathBoxFill: 'rgba(52, 211, 153, 0.42)', // Emerald green path-finding box
+          pathBoxBorder: 'rgba(52, 211, 153, 0.85)',
+          headFill: '#facc15',                // Radiant sunlit gold seeker orb
+          headGlow: 'rgba(250, 204, 21, 0.60)',
+          headBorder: '#ffffff',
+          solutionLine: '#facc15',            // Golden treasure solution line
+          playerTrail: '#34d399',
+          arrowEntrance: '#10b981',
+          arrowExit: '#f43f5e',
+        };
+
+      case 'terminal': // 🟡 Golden Field Terminal (Default)
+      default:
+        return {
+          bg: '#0d1117',                      // Deep CRT terminal canvas
+          mazeBg: '#161b22',                  // Terminal slate maze interior
+          wallColor: '#f59e0b',               // Golden brass CRT phosphor walls
+          exploredFill: 'rgba(245, 158, 11, 0.12)',
+          exploredBorder: 'rgba(245, 158, 11, 0.35)',
+          pathBoxFill: 'rgba(245, 158, 11, 0.45)', // Warm amber path-finding box
+          pathBoxBorder: 'rgba(245, 158, 11, 0.88)',
+          headFill: '#fbbf24',                // Glowing golden amber orb
+          headGlow: 'rgba(245, 158, 11, 0.60)',
+          headBorder: '#ffffff',
+          solutionLine: '#ef4444',            // Bold crimson solution line
+          playerTrail: '#f59e0b',
+          arrowEntrance: '#22c55e',
+          arrowExit: '#ef4444',
+        };
+    }
   }
 
   setGrid(grid) {
@@ -43,6 +126,8 @@ export class ClassicMazeRenderer {
     this.playerTrail = grid ? [grid.start] : [];
     this.solutionPath = [];
     this.exploredCells = [];
+    this.activeTrail = [];
+    this.currentHead = -1;
     this.resize();
     this.render();
   }
@@ -50,8 +135,20 @@ export class ClassicMazeRenderer {
   setPlayer(cell) {
     if (!this.grid || cell < 0 || cell >= this.grid.size) return;
     this.playerCell = cell;
-    if (this.playerTrail.length === 0 || this.playerTrail[this.playerTrail.length - 1] !== cell) {
-      this.playerTrail.push(cell);
+
+    if (!Array.isArray(this.playerTrail) || this.playerTrail.length === 0) {
+      this.playerTrail = [cell];
+    } else {
+      const last = this.playerTrail[this.playerTrail.length - 1];
+      if (last !== cell) {
+        // If backtracking into an earlier cell along the covered path, remove dead-end/retreated markers
+        const prevIndex = this.playerTrail.lastIndexOf(cell);
+        if (prevIndex !== -1) {
+          this.playerTrail = this.playerTrail.slice(0, prevIndex + 1);
+        } else {
+          this.playerTrail.push(cell);
+        }
+      }
     }
     this.render();
   }
@@ -63,15 +160,19 @@ export class ClassicMazeRenderer {
     this.render();
   }
 
-  setSolution(path, explored = []) {
+  setSolution(path, explored = [], activeTrail = [], currentHead = -1) {
     this.solutionPath = path || [];
     this.exploredCells = explored || [];
+    this.activeTrail = activeTrail || [];
+    this.currentHead = typeof currentHead === 'number' ? currentHead : -1;
     this.render();
   }
 
   clearSolution() {
     this.solutionPath = [];
     this.exploredCells = [];
+    this.activeTrail = [];
+    this.currentHead = -1;
     this.render();
   }
 
@@ -81,7 +182,7 @@ export class ClassicMazeRenderer {
   setFogEnabled() {}
   setScout(cell) { this.setPlayer(cell); }
   setPath(path) { this.solutionPath = path || []; this.render(); }
-  clearHeat() { this.exploredCells = []; }
+  clearHeat() { this.exploredCells = []; this.activeTrail = []; this.currentHead = -1; }
   recordVisit(cell) { this.exploredCells.push(cell); }
 
   resize() {
@@ -122,22 +223,18 @@ export class ClassicMazeRenderer {
     const totalW = cols * cp + m * 2;
     const totalH = rows * cp + m * 2;
 
-    const isDark = this.theme === 'dark';
-    const bg = isDark ? '#0f172a' : '#ffffff';
-    const mazeBg = isDark ? '#1e293b' : '#ffffff';
-    const wallColor = isDark ? '#f8fafc' : '#0f172a';
+    const colors = this.getThemeColors();
 
-    // 1. Fill entire canvas background
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, totalW, totalH);
+    // 1. Clear entire canvas so the rest of the screen shows background animation
+    ctx.clearRect(0, 0, totalW, totalH);
 
-    // 2. Draw maze interior background
-    ctx.fillStyle = mazeBg;
+    // 2. Draw ONLY the selected maze part as opaque interior
+    ctx.fillStyle = colors.mazeBg;
     ctx.fillRect(m, m, cols * cp, rows * cp);
 
-    // 3. Draw Explored / Search Frontier Cells (subtle pastel tint during solve)
+    // 3. Draw Explored Cells (subtle themed backdrop during search)
     if (this.exploredCells && this.exploredCells.length > 0) {
-      ctx.fillStyle = isDark ? 'rgba(56, 189, 248, 0.18)' : 'rgba(147, 197, 253, 0.35)';
+      ctx.fillStyle = colors.exploredFill;
       for (const cell of this.exploredCells) {
         if (cell < 0 || cell >= this.grid.size) continue;
         const r = this.grid.rowOf(cell);
@@ -146,10 +243,33 @@ export class ClassicMazeRenderer {
       }
     }
 
-    // 4. Draw User Player Trail (Clean vibrant blue line)
+    // 4. Draw Active Path-Finding Cover Boxes (according to each theme!)
+    // In backtracking, this shows the active corridor trail; as it backtracks from dead ends,
+    // boxes are removed accordingly!
+    if (this.activeTrail && this.activeTrail.length > 0) {
+      ctx.save();
+      ctx.fillStyle = colors.pathBoxFill;
+      ctx.strokeStyle = colors.pathBoxBorder;
+      ctx.lineWidth = 1.5;
+      const pad = Math.max(1, Math.round(cp * 0.08));
+      const boxSize = cp - pad * 2;
+
+      for (const cell of this.activeTrail) {
+        if (cell < 0 || cell >= this.grid.size) continue;
+        const r = this.grid.rowOf(cell);
+        const c = this.grid.colOf(cell);
+        const bx = m + c * cp + pad;
+        const by = m + r * cp + pad;
+        ctx.fillRect(bx, by, boxSize, boxSize);
+        ctx.strokeRect(bx, by, boxSize, boxSize);
+      }
+      ctx.restore();
+    }
+
+    // 5. Draw User Player Trail
     if (this.playerTrail && this.playerTrail.length > 1) {
       ctx.save();
-      ctx.strokeStyle = isDark ? '#38bdf8' : '#2563eb';
+      ctx.strokeStyle = colors.playerTrail;
       ctx.lineWidth = Math.max(3, Math.round(cp * 0.22));
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
@@ -165,10 +285,10 @@ export class ClassicMazeRenderer {
       ctx.restore();
     }
 
-    // 5. Draw Solution Path (Solid Bold Red Line like Image 2!)
+    // 6. Draw Solution Path (Solid Bold Line)
     if (this.solutionPath && this.solutionPath.length > 1) {
       ctx.save();
-      ctx.strokeStyle = '#ef4444'; // Bright Red
+      ctx.strokeStyle = colors.solutionLine;
       ctx.lineWidth = Math.max(4, Math.round(cp * 0.32));
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
@@ -198,9 +318,9 @@ export class ClassicMazeRenderer {
       ctx.restore();
     }
 
-    // 6. Draw Maze Walls (Solid crisp lines, entrance & exit opened!)
+    // 7. Draw Maze Walls (Solid crisp lines in theme colors)
     ctx.save();
-    ctx.strokeStyle = wallColor;
+    ctx.strokeStyle = colors.wallColor;
     ctx.lineWidth = this.wallThick;
     ctx.lineCap = 'square';
     ctx.beginPath();
@@ -247,19 +367,58 @@ export class ClassicMazeRenderer {
     ctx.stroke();
     ctx.restore();
 
-    // 7. Draw Green Entrance Arrow (Pointing Inward from Left into Start cell)
-    this._drawEntranceArrow(ctx, m, cp, this.grid.start);
+    // 8. Draw Entrance Arrow (Pointing Inward from Left into Start cell)
+    this._drawEntranceArrow(ctx, m, cp, this.grid.start, colors.arrowEntrance);
 
-    // 8. Draw Red Exit Arrow (Pointing Downward Out of Exit cell)
-    this._drawExitArrow(ctx, m, cp, this.grid.end);
+    // 9. Draw Exit Arrow (Pointing Downward Out of Exit cell)
+    this._drawExitArrow(ctx, m, cp, this.grid.end, colors.arrowExit);
 
-    // 9. Draw Player Marker (if placed inside maze)
+    // 10. Draw Algorithm Seeker Head (during auto solve)
+    if (this.currentHead >= 0 && this.currentHead < this.grid.size) {
+      this._drawSeekerHead(ctx, m, cp, this.currentHead, colors);
+    }
+
+    // 11. Draw Player Marker (if placed inside maze)
     if (this.playerCell >= 0 && this.playerCell < this.grid.size) {
-      this._drawPlayerToken(ctx, m, cp, this.playerCell, isDark);
+      this._drawPlayerToken(ctx, m, cp, this.playerCell, colors);
     }
   }
 
-  _drawEntranceArrow(ctx, m, cp, startCell) {
+  _drawSeekerHead(ctx, m, cp, cell, colors) {
+    const r = this.grid.rowOf(cell);
+    const c = this.grid.colOf(cell);
+    const x = m + (c + 0.5) * cp;
+    const y = m + (r + 0.5) * cp;
+    const rad = Math.max(5, cp * 0.32);
+
+    ctx.save();
+    // Soft outer glow
+    ctx.fillStyle = colors.headGlow;
+    ctx.beginPath();
+    ctx.arc(x, y, rad * 1.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Vibrant themed head
+    ctx.fillStyle = colors.headFill;
+    ctx.beginPath();
+    ctx.arc(x, y, rad, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Crisp rim border
+    ctx.strokeStyle = colors.headBorder;
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+
+    // Center focal sparkle
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(x, y, rad * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  _drawEntranceArrow(ctx, m, cp, startCell, arrowColor = '#22c55e') {
     const r = this.grid.rowOf(startCell);
     const c = this.grid.colOf(startCell);
     const tipX = m - 2;
@@ -268,8 +427,8 @@ export class ClassicMazeRenderer {
     const headSize = Math.max(6, cp * 0.28);
 
     ctx.save();
-    ctx.fillStyle = '#22c55e'; // Vibrant Green
-    ctx.strokeStyle = '#15803d';
+    ctx.fillStyle = arrowColor;
+    ctx.strokeStyle = arrowColor;
     ctx.lineWidth = 1.5;
 
     // Arrow body & head pointing right (➡️)
@@ -287,7 +446,7 @@ export class ClassicMazeRenderer {
     ctx.restore();
   }
 
-  _drawExitArrow(ctx, m, cp, endCell) {
+  _drawExitArrow(ctx, m, cp, endCell, arrowColor = '#ef4444') {
     const r = this.grid.rowOf(endCell);
     const c = this.grid.colOf(endCell);
     const tipX = m + (c + 0.5) * cp;
@@ -296,8 +455,8 @@ export class ClassicMazeRenderer {
     const headSize = Math.max(6, cp * 0.28);
 
     ctx.save();
-    ctx.fillStyle = '#ef4444'; // Vibrant Red
-    ctx.strokeStyle = '#b91c1c';
+    ctx.fillStyle = arrowColor;
+    ctx.strokeStyle = arrowColor;
     ctx.lineWidth = 1.5;
 
     // Arrow body & head pointing down (⬇️)
@@ -315,22 +474,25 @@ export class ClassicMazeRenderer {
     ctx.restore();
   }
 
-  _drawPlayerToken(ctx, m, cp, cell, isDark) {
+  _drawPlayerToken(ctx, m, cp, cell, colors) {
     const r = this.grid.rowOf(cell);
     const c = this.grid.colOf(cell);
     const x = m + (c + 0.5) * cp;
     const y = m + (r + 0.5) * cp;
     const rad = Math.max(5, cp * 0.35);
 
+    const tokenFill = (colors && colors.playerTrail) || '#3b82f6';
+    const glowFill = (colors && colors.headGlow) || 'rgba(59, 130, 246, 0.35)';
+
     ctx.save();
     // Soft outer glow
-    ctx.fillStyle = 'rgba(59, 130, 246, 0.35)';
+    ctx.fillStyle = glowFill;
     ctx.beginPath();
     ctx.arc(x, y, rad * 1.5, 0, Math.PI * 2);
     ctx.fill();
 
-    // Vibrant blue circle
-    ctx.fillStyle = '#3b82f6';
+    // Vibrant themed circle
+    ctx.fillStyle = tokenFill;
     ctx.beginPath();
     ctx.arc(x, y, rad, 0, Math.PI * 2);
     ctx.fill();

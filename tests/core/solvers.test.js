@@ -89,3 +89,17 @@ test('Solvers - Wall Follower right-hand rule solves perfect mazes', () => {
   assert.equal(res.found, true);
   assert.ok(res.path.length > 0);
 });
+
+test('Solvers - Backtracking solver solves perfect and braided mazes', () => {
+  const rng = new Rng('backtrack_solver_test');
+  const grid = new Grid(15, 15, true);
+  drain(GENERATORS.prm.generate(grid, rng));
+  braid(grid, 20, rng);
+
+  const res = runSolver(SOLVERS.bkt, grid);
+  assert.equal(res.found, true);
+  assert.ok(res.path.length > 0);
+  assert.equal(res.path[0], grid.start);
+  assert.equal(res.path[res.path.length - 1], grid.end);
+});
+

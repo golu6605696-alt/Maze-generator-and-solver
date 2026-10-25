@@ -86,3 +86,65 @@ export function computeScore({
     isZen,
   };
 }
+
+/**
+ * Calculates 1, 2, or 3 stars performance rating based on steps taken, elapsed time,
+ * optimal path length, and maze difficulty.
+ *
+ * @param {object} params
+ * @param {number} params.steps Player steps taken
+ * @param {number} params.elapsedSec Time taken in seconds
+ * @param {number} [params.optimalSteps=25] Minimum steps to reach exit (BFS length)
+ * @param {string} [params.difficulty='easy'] Difficulty ('easy', 'medium', 'hard')
+ * @returns {{ stars: 1|2|3, parTime: number, optimalSteps: number, reason: string, starStr: string }}
+ */
+export function calculatePerformanceStars({
+  steps,
+  elapsedSec,
+  optimalSteps = 25,
+  difficulty = 'easy',
+}) {
+  const opt = Math.max(1, optimalSteps);
+  const diffMultiplier = difficulty === 'hard' ? 1.4 : (difficulty === 'medium' ? 1.15 : 1.0);
+
+  // Par time (seconds): baseline ~0.75s per optimal cell * difficulty multiplier
+  const parTime = Math.max(10, Math.round(opt * 0.75 * diffMultiplier));
+
+  const stepRatio = steps / opt;
+  const timeRatio = elapsedSec / parTime;
+
+  let stars = 1;
+  let reason = 'Maze Conquered!';
+
+  // 3 Stars: Efficient steps AND quick time (or near-optimal on either)
+  if (
+    (stepRatio <= 1.35 && timeRatio <= 1.35) ||
+    (steps <= opt + 4 && timeRatio <= 1.8) ||
+    (timeRatio <= 0.8 && stepRatio <= 1.6)
+  ) {
+    stars = 3;
+    reason = 'Flawless Master Run!';
+  } else if (
+    (stepRatio <= 2.2 && timeRatio <= 2.2) ||
+    (stepRatio <= 1.65) ||
+    (timeRatio <= 1.35)
+  ) {
+    stars = 2;
+    reason = 'Great Exploration!';
+  } else {
+    stars = 1;
+    reason = 'Maze Conquered!';
+  }
+
+  const starStr = stars === 3 ? '⭐⭐⭐' : (stars === 2 ? '⭐⭐☆' : '⭐☆☆');
+
+  return {
+    stars,
+    parTime,
+    optimalSteps: opt,
+    reason,
+    starStr,
+    stepRatio: Math.round(stepRatio * 100) / 100,
+    timeRatio: Math.round(timeRatio * 100) / 100,
+  };
+}

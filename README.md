@@ -1,77 +1,41 @@
-# 🧭 Maze Quest: Procedural Labyrinths & Algorithm Arena
+# Maze Quest: Procedural Labyrinths & Algorithm Arena
 
 > **An interactive procedural maze exploration game and DSA algorithm laboratory built with pure vanilla JavaScript, HTML5 Canvas, and modern Web APIs. Zero runtime dependencies, zero build steps.**
 
 ---
 
-## ⚡ Highlights & Key Features
+## Highlights & Key Features
 
-### 1. 🧩 Classic Play & Solve Maze (15×15 Grid)
+### 1. Classic Play & Solve Maze (15×15 Grid)
 - **100% Visible Classic Labyrinth:** Crisp black walls on clean white corridors modeled after classic pen-and-paper maze puzzles. Zero fog, zero darkness, zero stamina limits.
-- **🟢 Entrance & 🔴 Exit:** Green arrow at the top-left entrance (open wall) pointing in; Red arrow at the bottom-right exit pointing out.
+- **Entrance & Exit:** Green arrow at the top-left entrance (open wall) pointing in; Red arrow at the bottom-right exit pointing out.
 - **Player Navigation:** Walk freely with **Arrow Keys**, **W / A / S / D**, or the on-screen **D-Pad**. Smooth blue trail traces your path as you explore.
 - **Difficulty by Branching Confusion (All 15×15):**
   - `🟢 EASY`: Clean, straightforward path with 2 choices right at the start and 6–10 simple decision forks. Short dead ends.
   - `🟡 MEDIUM`: Higher branchiness (~18–24 decision points) with 55+ deeper dead ends and subtle alternate routes to deceive the player.
   - `🔴 HARD`: Maximum confusion! Dense branching at nearly every corridor (60+ forks), long deceptive paths that travel deep towards the exit, and 15% braiding loops!
 - **Automated Algorithmic Solvers:**
-  - 🌊 **BFS (Breadth-First Search):** Finds the guaranteed shortest path.
-  - 🦔 **DFS (Depth-First Search):** Explores deeply along corridor branches.
-  - 🖐️ **Backtracking (Wall Follower):** Explores systematically and backtracks out of dead ends.
-  - Clicking **`💡 SOLVE MAZE`** automatically reveals and traces the **bold red solution path line** from entrance to exit.
+  - **BFS (Breadth-First Search):** Finds the guaranteed shortest path.
+  - **DFS (Depth-First Search):** Explores deeply along corridor branches.
+  - **Backtracking (Wall Follower):** Explores systematically and backtracks out of dead ends.
+  - Clicking **`SOLVE MAZE`** automatically reveals and traces the **bold red solution path line** from entrance to exit.
   - Clicking **`↺ RETRY`** resets your runner back to Start so you can try solving it yourself.
 
 ---
 
-### 2. 🗺️ World Quest Map (15-Level Campaign)
+### 2. World Quest Map (15-Level Campaign)
 - **5 Themed Worlds & 15 Progressive Stages:**
-  - 🌲 **Whispering Woods:** Gentle beginner pathways (*Sunny Glade, Breezy Hollow, Ancient Oak*).
-  - 🌊 **Sunken Bridges:** Winding wooden planks over clear water (*Plank Pathway, Twin Canals, Harbor Gate*).
-  - 🌾 **Muddy Marshes:** Sticky terrain testing stamina conservation (*Slippery Slough, Willow Bog, Hound Marsh*).
-  - 🏰 **Crumbling Castle:** Collapsing stone passages (*Courtyard Maze, Knight Gallery, Dungeon Vault*).
-  - 🌌 **Starry Labyrinth:** Twilight maze with dim lanterns and 5 robot racers (*Constellation Run, Supernova Spiral, Infinity Core*).
-- **⭐ Star Rating System:** Earn 1 to 3 stars per level based on par times and stamina efficiency.
+  - **Whispering Woods:** Gentle beginner pathways (*Sunny Glade, Breezy Hollow, Ancient Oak*).
+  - **Sunken Bridges:** Winding wooden planks over clear water (*Plank Pathway, Twin Canals, Harbor Gate*).
+  - **Muddy Marshes:** Sticky terrain testing stamina conservation (*Slippery Slough, Willow Bog, Hound Marsh*).
+  - **Crumbling Castle:** Collapsing stone passages (*Courtyard Maze, Knight Gallery, Dungeon Vault*).
+  - **Starry Labyrinth:** Twilight maze with dim lanterns and 5 robot racers (*Constellation Run, Supernova Spiral, Infinity Core*).
+- **Star Rating System:** Earn 1 to 3 stars per level based on par times and stamina efficiency.
 - **Client-Side Persistence:** Automatically stores unlocked levels, high scores, and best times in browser `localStorage`.
 
 ---
 
-### 3. ⚔️ 2-Player Local Race Duel (Same-Keyboard Multiplayer)
-- **Head-to-Head Competitive Racing:** Two players explore the same labyrinth simultaneously on one computer keyboard:
-  - **Player 1 (Blue Scout):** Controlled with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>.
-  - **Player 2 (Red Scout):** Controlled with Arrow Keys (<kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd>).
-- **Live Match Telemetry:** Centisecond race stopwatch, individual step counts, and relic tallies.
-- **Victory Overlay:** First explorer to touch the golden exit wins with instant rematch and new battle maze generation.
-
----
-
-### 4. 🧪 Cartographer Lab & Algorithm Studio
-- **5 Spanning Tree Generators:**
-  - **Recursive Backtracker (`bkt`):** Iterative DFS with explicit stack.
-  - **Randomized Prim's (`prm`):** Frontier-set generation.
-  - **Randomized Kruskal's (`krk`):** Edge shuffling with Disjoint-Set Union (DSU).
-  - **Wilson's Algorithm (`wil`):** Loop-erased random walks producing unbiased Uniform Spanning Trees.
-  - **Recursive Division (`div`):** Chamber partitioning with random aperture carving.
-- **5 Pathfinding Solvers:**
-  - **Depth-First Search (`dfs`):** Winding, memory-efficient exploration.
-  - **Breadth-First Search (`bfs`):** Fewest hops guarantee on unweighted edges.
-  - **Dijkstra's Algorithm (`dij`):** MinHeap-driven cost-optimal pathfinding.
-  - **A\* Search (`ast`):** Admissible Manhattan heuristic for directed exploration.
-  - **Wall Follower (`wfl`):** Loop-guarded right-hand rule traversal.
-- **Interactive Map Editing:** Direct canvas wall carving, building, and terrain brushing (Plain, Bridge, Mud, Ruins).
-- **Cartouche & Map Export:** Export high-resolution PNG maps with decorative border, scale bar, legend, and cryptographic fingerprint.
-- **Lockstep Multi-Solver Race:** Benchmark multiple solvers simultaneously on identical maze topology.
-
----
-
-### 5. ⚡ Performance Benchmark Suite
-- Automated statistical testing measuring:
-  - **Median Execution Speed** and **IQR Variance** across 20x20, 40x40, and 60x60 mazes.
-  - **Expanded Cell Count**, **Path Hops**, and **Total Energy Cost**.
-- One-click export to **CSV** and **JSON** formats.
-
----
-
-### 6. 🎨 4 Handcrafted Color Themes (Anti-AI Aesthetics)
+### 3. 4 Handcrafted Color Themes
 Click **`THEME`** in the top navigation or press <kbd>T</kbd> to cycle between:
 1. **Golden Terminal (Default):** Warm amber CRT phosphor glow (`#f59e0b`), deep slate obsidian background (`#070a0f`), and bronze accents.
 2. **Treasure Map (Parchment):** Aged archival parchment (`#f4ecd8`), antique iron-gall ink (`#291a10`), and deep sepia accents.
@@ -80,7 +44,7 @@ Click **`THEME`** in the top navigation or press <kbd>T</kbd> to cycle between:
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - [Node.js](https://nodejs.org/) v18+ (tested on Node v20/v22/v24)
@@ -100,7 +64,7 @@ npm test
 
 ---
 
-## ⌨️ Controls & Keybindings
+## ⌨ Controls & Keybindings
 
 ### Navigation (Solo Expedition)
 | Input | Action |
@@ -129,7 +93,7 @@ npm test
 
 ---
 
-## 🏗️ Project Architecture
+## Project Architecture
 
 ```
 Maze/
@@ -181,5 +145,5 @@ Maze/
 
 ---
 
-## 📜 License
+## License
 MIT License.

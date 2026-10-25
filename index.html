@@ -388,13 +388,13 @@
 
             <!-- Center: Solve & Algorithm Selector -->
             <div class="sp-group">
-              <button id="btn-solve-maze" class="btn-solve-action" type="button">💡 SOLVE MAZE</button>
+              <button id="btn-solve-maze" class="btn-solve-action" type="button" title="Auto-solve maze with BFS, DFS, or Backtracking">💡 AUTO SOLVE</button>
               <div class="sp-algo-wrap">
                 <label for="select-solve-algo" class="sp-lbl">ALGO:</label>
                 <select id="select-solve-algo" class="sp-select">
-                  <option value="bfs" selected>🌊 BFS (Shortest Path)</option>
+                  <option value="bfs" selected>🌊 BFS (Shortest)</option>
                   <option value="dfs">🦔 DFS (Depth-First)</option>
-                  <option value="wfl">🖐️ Backtracking</option>
+                  <option value="bkt">⚡ Backtracking</option>
                 </select>
               </div>
               <button id="btn-retry-maze" class="btn-hud" type="button">↺ RETRY</button>
@@ -411,74 +411,76 @@
             </div>
           </div>
 
-          <!-- Live Guidance / Status Banner -->
-          <div class="maze-guide-banner" id="maze-guide-banner">
-            <span class="guide-icon" id="guide-icon">👉</span>
-            <span class="guide-text" id="guide-text">Use <strong>Arrow Keys</strong> or <strong>WASD</strong> to move from 🟢 Green Entrance to 🔴 Red Exit. Stuck? Click <strong>💡 SOLVE MAZE</strong>!</span>
-          </div>
-
           <!-- Center Map Viewport -->
           <div class="map-viewport">
             <canvas id="canvas-expedition"></canvas>
-            <!-- Virtual D-Pad for Mobile & Touch Controls -->
-            <div class="dpad-container" id="dpad">
-              <button id="dpad-up" class="dpad-btn up" type="button" aria-label="Move Up">▲</button>
-              <button id="dpad-left" class="dpad-btn left" type="button" aria-label="Move Left">◀</button>
-              <button id="dpad-down" class="dpad-btn down" type="button" aria-label="Move Down">▼</button>
-              <button id="dpad-right" class="dpad-btn right" type="button" aria-label="Move Right">▶</button>
-            </div>
+          </div>
 
-            <!-- Maze Victory / Game Completed Modal -->
-            <div id="maze-victory-overlay" class="maze-victory-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="victory-modal-title">
-              <canvas id="victory-confetti-canvas" class="victory-confetti-canvas"></canvas>
-              <div class="maze-victory-card">
-                <button id="btn-victory-close" class="victory-close-btn" type="button" aria-label="Close modal" title="Close modal">✕</button>
-                
-                <div class="trophy-display-area">
-                  <div class="trophy-radiance-aura"></div>
-                  <div class="trophy-icon-anim" aria-hidden="true">🏆</div>
-                  <div class="trophy-stars">
-                    <span class="t-star s1">✨</span>
-                    <span class="t-star s2">⭐</span>
-                    <span class="t-star s3">✨</span>
+          <!-- Maze Victory / Game Completed Modal Overlay -->
+          <div id="maze-victory-overlay" class="maze-victory-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="victory-modal-title">
+            <canvas id="victory-confetti-canvas" class="victory-confetti-canvas"></canvas>
+            <div class="maze-victory-card">
+              <button id="btn-victory-close" class="victory-close-btn" type="button" aria-label="Close modal" title="Close modal">✕</button>
+              
+              <!-- Performance Stars Showcase (1, 2, or 3 Stars based on Steps & Time) -->
+              <div class="victory-stars-area" id="victory-stars-area" aria-label="Performance Stars">
+                <div class="stars-radiance-aura"></div>
+                <div class="stars-podium-row" id="victory-stars-podium">
+                  <div class="v-star-slot slot-left earned" id="v-star-1" data-star="1">
+                    <span class="v-star-glow"></span>
+                    <span class="v-star-glyph">★</span>
+                    <span class="v-star-sparkle">✦</span>
+                  </div>
+                  <div class="v-star-slot slot-center earned" id="v-star-2" data-star="2">
+                    <span class="v-star-glow"></span>
+                    <span class="v-star-glyph">★</span>
+                    <span class="v-star-sparkle">✦</span>
+                  </div>
+                  <div class="v-star-slot slot-right earned" id="v-star-3" data-star="3">
+                    <span class="v-star-glow"></span>
+                    <span class="v-star-glyph">★</span>
+                    <span class="v-star-sparkle">✦</span>
                   </div>
                 </div>
+              </div>
 
-                <div class="victory-badge" id="victory-badge">MAZE CONQUERED</div>
-                <h3 id="victory-modal-title" class="victory-modal-title">GAME COMPLETED!</h3>
-                <p id="victory-modal-desc" class="victory-modal-desc">
-                  Magnificent! You successfully navigated through the maze and reached the goal!
-                </p>
+              <h3 id="victory-modal-title" class="victory-modal-title">VICTORY!</h3>
+              <p id="victory-modal-desc" class="victory-modal-desc">
+                You successfully conquered the maze!
+              </p>
 
-                <div class="victory-metrics-row">
-                  <div class="v-metric-item">
-                    <span class="v-metric-label">STEPS</span>
-                    <span id="victory-stat-steps" class="v-metric-val">0</span>
-                  </div>
-                  <div class="v-metric-item">
-                    <span class="v-metric-label">DIFFICULTY</span>
-                    <span id="victory-stat-diff" class="v-metric-val">MEDIUM</span>
-                  </div>
-                  <div class="v-metric-item">
-                    <span class="v-metric-label">STATUS</span>
-                    <span id="victory-stat-rating" class="v-metric-val">GOAL REACHED 🎯</span>
-                  </div>
+              <div class="victory-metrics-row" id="victory-metrics-row">
+                <div class="v-metric-item" id="v-metric-item-steps">
+                  <span class="v-metric-label" id="victory-stat-steps-label">STEPS</span>
+                  <span id="victory-stat-steps" class="v-metric-val">0</span>
                 </div>
-
-                <div class="victory-actions-row">
-                  <button id="btn-victory-new" class="btn-primary-brass pulse-button" type="button">
-                    🎲 NEW MAZE
-                  </button>
-                  <button id="btn-victory-retry" class="btn-action" type="button">
-                    ↺ REPLAY MAZE
-                  </button>
-                  <button id="btn-victory-campaign" class="btn-action" type="button" style="display: none;">
-                    🗺️ QUEST MAP
-                  </button>
-                  <button id="btn-victory-inspect" class="btn-hud" type="button">
-                    👁️ VIEW MAZE
-                  </button>
+                <div class="v-metric-item" id="v-metric-item-time" style="display: none;">
+                  <span class="v-metric-label" id="victory-stat-time-label">TIME</span>
+                  <span id="victory-stat-time" class="v-metric-val">0.0ms</span>
                 </div>
+                <div class="v-metric-item" id="v-metric-item-diff">
+                  <span class="v-metric-label" id="victory-stat-diff-label">DIFFICULTY</span>
+                  <span id="victory-stat-diff" class="v-metric-val">MEDIUM</span>
+                </div>
+                <div class="v-metric-item" id="v-metric-item-rating">
+                  <span class="v-metric-label" id="victory-stat-rating-label">STATUS</span>
+                  <span id="victory-stat-rating" class="v-metric-val">GOAL REACHED 🎯</span>
+                </div>
+              </div>
+
+              <div class="victory-actions-row">
+                <button id="btn-victory-new" class="btn-primary-brass pulse-button" type="button">
+                  🎲 NEW MAZE
+                </button>
+                <button id="btn-victory-retry" class="btn-action" type="button">
+                  ↺ REPLAY MAZE
+                </button>
+                <button id="btn-victory-campaign" class="btn-action" type="button" style="display: none;">
+                  🗺️ QUEST MAP
+                </button>
+                <button id="btn-victory-inspect" class="btn-hud" type="button">
+                  👁️ VIEW MAZE
+                </button>
               </div>
             </div>
           </div>

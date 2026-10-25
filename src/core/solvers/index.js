@@ -8,6 +8,7 @@ import { BfsSolver } from './bfs.js';
 import { DijkstraSolver } from './dijkstra.js';
 import { AStarSolver } from './astar.js';
 import { WallFollowerSolver } from './wallfollower.js';
+import { BacktrackingSolver } from './backtracking.js';
 import { drain } from '../iter.js';
 
 export {
@@ -16,6 +17,7 @@ export {
   DijkstraSolver,
   AStarSolver,
   WallFollowerSolver,
+  BacktrackingSolver,
 };
 
 export const SOLVERS = Object.freeze({
@@ -24,6 +26,7 @@ export const SOLVERS = Object.freeze({
   dij: new DijkstraSolver(),
   ast: new AStarSolver(),
   wfl: new WallFollowerSolver(),
+  bkt: new BacktrackingSolver(),
 });
 
 /**
@@ -32,6 +35,7 @@ export const SOLVERS = Object.freeze({
  * @returns {import('../types.js').Solver}
  */
 export function getSolver(id) {
+  if (id === 'backtrack') return SOLVERS.bkt;
   const solver = SOLVERS[id];
   if (!solver) {
     throw new Error(`Unknown solver id: ${id}`);
