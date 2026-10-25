@@ -57,7 +57,7 @@ npm start
 Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 
 ### Running Test Suite
-Execute the 91 automated unit and property tests with Node's native test runner:
+Execute the 101 automated unit and property tests with Node's native test runner:
 ```bash
 npm test
 ```
@@ -66,7 +66,7 @@ npm test
 
 ## ⌨ Controls & Keybindings
 
-### Navigation (Solo Expedition)
+### Navigation
 | Input | Action |
 |---|---|
 | <kbd>W</kbd> / <kbd>↑</kbd> | Move North |
@@ -75,21 +75,6 @@ npm test
 | <kbd>A</kbd> / <kbd>←</kbd> | Move West |
 | On-Screen D-Pad | Touch controls for mobile / tablet |
 | <kbd>T</kbd> | Cycle Color Theme |
-
-### 2-Player Race Duel
-| Player | Controls |
-|---|---|
-| **Player 1 (Blue Scout)** | <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> |
-| **Player 2 (Red Scout)** | <kbd>↑</kbd> <kbd>←</kbd> <kbd>↓</kbd> <kbd>→</kbd> (Arrow Keys) |
-
-### Playback & Studio (Lab Mode)
-| Input | Action |
-|---|---|
-| <kbd>Space</kbd> | Start / Pause playback |
-| <kbd>→</kbd> / <kbd>Period</kbd> | Advance 1 step |
-| <kbd>←</kbd> / <kbd>Comma</kbd> | Step backward |
-| <kbd>Esc</kbd> | Cancel / Reset playback |
-| Detent Dial | Adjust speed: `1x`, `2x`, `5x`, `10x`, `30x`, `100x`, `MAX` |
 
 ---
 
