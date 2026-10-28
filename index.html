@@ -1,15 +1,27 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="terminal">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Maze Quest - Adventure & DSA Algorithms</title>
-  <meta name="description" content="Explore procedural mazes, navigate fog of war, race algorithmic bots, and duel friends on one keyboard.">
+  <meta name="description"
+    content="Explore procedural mazes, navigate fog of war, race algorithmic bots, and duel friends on one keyboard.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Fraunces:opsz,wght@9..144,600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Fraunces:opsz,wght@9..144,600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="index.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./src/lib/three.module.js"
+    }
+  }
+  </script>
 </head>
+
 <body>
   <!-- Ambient Interactive Dynamic Maze Background (Reacts to Scroll & Parallax) -->
   <canvas id="bg-maze-canvas" class="bg-maze-canvas" aria-hidden="true"></canvas>
@@ -33,9 +45,9 @@
       <div class="masthead-brand" id="brand-home-btn" role="button" tabindex="0" title="Home">
         <div class="brand-crest">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <rect x="2" y="2" width="20" height="20" rx="3"/>
-            <path d="M7 2v8h5V2M17 7v10h-5M2 14h6v8M17 17h5"/>
-            <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
+            <rect x="2" y="2" width="20" height="20" rx="3" />
+            <path d="M7 2v8h5V2M17 7v10h-5M2 14h6v8M17 17h5" />
+            <circle cx="12" cy="12" r="2.5" fill="currentColor" />
           </svg>
         </div>
         <div class="brand-titles">
@@ -84,7 +96,8 @@
             </div>
 
             <!-- Interactive Portal Hotspot over the right-side portal arch -->
-            <div id="portal-hotspot" class="portal-hotspot" role="button" tabindex="0" title="Click to enter the portal">
+            <div id="portal-hotspot" class="portal-hotspot" role="button" tabindex="0"
+              title="Click to enter the portal">
               <div class="portal-swirl-aura"></div>
               <div class="portal-energy-ring"></div>
               <div class="portal-core-glow"></div>
@@ -114,7 +127,8 @@
                 </p>
 
                 <div class="fantasy-hero-actions">
-                  <button id="btn-enter-world-main" class="fantasy-cta-primary" type="button" aria-label="Enter the World">
+                  <button id="btn-enter-world-main" class="fantasy-cta-primary" type="button"
+                    aria-label="Enter the World">
                     <span class="cta-glow-bg"></span>
                     <span class="cta-content">
                       <span class="cta-bracket">[</span>
@@ -179,7 +193,8 @@
                   </div>
                   <h4 class="lore-title">The Shifting Realm</h4>
                   <p class="lore-body">
-                    Every descent carves a virgin labyrinth. Powered by recursive backtracker, Prim's stonecraft, and Wilson's uniform spanning trees, no two trials are ever identical.
+                    Every descent carves a virgin labyrinth. Powered by recursive backtracker, Prim's stonecraft, and
+                    Wilson's uniform spanning trees, no two trials are ever identical.
                   </p>
                   <div class="lore-specs">
                     <span class="spec-pill">Infinite Variances</span>
@@ -196,14 +211,16 @@
                   </div>
                   <h4 class="lore-title">Algorithmic Insight</h4>
                   <p class="lore-body">
-                    When lost in the gloom, summon the ancient wayfinders: Breadth-First ripples, Depth-First pioneers, and Dijkstra's weighted navigators illuminate the true exit.
+                    When lost in the gloom, summon the ancient wayfinders: Breadth-First ripples, Depth-First pioneers,
+                    and Dijkstra's weighted navigators illuminate the true exit.
                   </p>
                   <div class="radar-preview-container">
                     <div class="radar-header">
                       <span class="radar-status-dot"></span>
                       <span class="radar-label">LIVE RADAR SCOUT</span>
                     </div>
-                    <canvas id="canvas-hero-preview" width="240" height="240" aria-label="Live maze solver radar"></canvas>
+                    <canvas id="canvas-hero-preview" width="240" height="240"
+                      aria-label="Live maze solver radar"></canvas>
                   </div>
                 </div>
 
@@ -216,7 +233,8 @@
                   </div>
                   <h4 class="lore-title">The 15 Realm Trials</h4>
                   <p class="lore-body">
-                    From the sunlit Meadows of Aethelgard to the Abyssal Core, conquer 5 distinct realms. Master stamina, recover glowing lanterns, and earn 3-star honors.
+                    From the sunlit Meadows of Aethelgard to the Abyssal Core, conquer 5 distinct realms. Master
+                    stamina, recover glowing lanterns, and earn 3-star honors.
                   </p>
                   <div class="lore-specs">
                     <span class="spec-pill">5 Mythic Worlds</span>
@@ -230,13 +248,15 @@
                 <div class="cue-item">
                   <span class="cue-icon">⌨️</span>
                   <div>
-                    <strong>Navigation:</strong> Use <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or Arrow keys to tread the corridors.
+                    <strong>Navigation:</strong> Use <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or Arrow keys to
+                    tread the corridors.
                   </div>
                 </div>
                 <div class="cue-item">
                   <span class="cue-icon">⚡</span>
                   <div>
-                    <strong>Stamina & Relics:</strong> Gather rations 🍞 to replenish energy and oil 🪔 to widen your lantern radius.
+                    <strong>Stamina & Relics:</strong> Gather rations 🍞 to replenish energy and oil 🪔 to widen your
+                    lantern radius.
                   </div>
                 </div>
                 <div class="cue-item">
@@ -256,7 +276,8 @@
               <span class="trial-eyebrow">YOUR DESTINY AWAITS</span>
               <h3 class="trial-heading">BEGIN YOUR TRIAL</h3>
               <p class="trial-subtext">
-                The runes have aligned. Step through the celestial gateway and claim your place among the realm's legendary navigators.
+                The runes have aligned. Step through the celestial gateway and claim your place among the realm's
+                legendary navigators.
               </p>
 
               <div class="trial-actions">
@@ -335,7 +356,8 @@
                 <div class="code-row">
                   <div class="code-input-wrapper">
                     <label for="input-expedition-code" class="section-label">EXPEDITION CODE</label>
-                    <input type="text" id="input-expedition-code" class="terminal-input" spellcheck="false" value="v1/31x31/bkt/7K3Q9M2D/b20/t15/srv">
+                    <input type="text" id="input-expedition-code" class="terminal-input" spellcheck="false"
+                      value="v1/31x31/bkt/7K3Q9M2D/b20/t15/srv">
                   </div>
                   <button id="btn-daily" class="btn-action" type="button">DAILY RUN</button>
                   <button id="btn-new-code" class="btn-action" type="button">RANDOM SEED</button>
@@ -366,7 +388,8 @@
               </div>
 
               <div class="cartouche-actions">
-                <button id="btn-start-expedition" class="btn-primary-brass pulse-button" type="button">ENTER EXPEDITION ▶</button>
+                <button id="btn-start-expedition" class="btn-primary-brass pulse-button" type="button">ENTER EXPEDITION
+                  ▶</button>
               </div>
             </div>
           </div>
@@ -378,17 +401,22 @@
           <div class="simple-play-bar">
             <!-- Left: Generate Maze & Difficulty Options (15x15) -->
             <div class="sp-group">
-              <button id="btn-generate-maze" class="btn-primary-brass pulse-button" type="button">🎲 GENERATE MAZE</button>
+              <button id="btn-generate-maze" class="btn-primary-brass pulse-button" type="button">🎲 GENERATE
+                MAZE</button>
               <div class="sp-size-pills">
-                <button class="sp-diff-btn active" data-diff="easy" type="button" title="15x15 • Easy path with few branches">🟢 EASY</button>
-                <button class="sp-diff-btn" data-diff="medium" type="button" title="15x15 • More confusing forks & dead ends">🟡 MEDIUM</button>
-                <button class="sp-diff-btn" data-diff="hard" type="button" title="15x15 • Maximum confusing paths & loops">🔴 HARD</button>
+                <button class="sp-diff-btn active" data-diff="easy" type="button"
+                  title="15x15 • Easy path with few branches">🟢 EASY</button>
+                <button class="sp-diff-btn" data-diff="medium" type="button"
+                  title="15x15 • More confusing forks & dead ends">🟡 MEDIUM</button>
+                <button class="sp-diff-btn" data-diff="hard" type="button"
+                  title="15x15 • Maximum confusing paths & loops">🔴 HARD</button>
               </div>
             </div>
 
             <!-- Center: Solve & Algorithm Selector -->
             <div class="sp-group">
-              <button id="btn-solve-maze" class="btn-solve-action" type="button" title="Auto-solve maze with BFS, DFS, or Backtracking">💡 AUTO SOLVE</button>
+              <button id="btn-solve-maze" class="btn-solve-action" type="button"
+                title="Auto-solve maze with BFS, DFS, or Backtracking">💡 AUTO SOLVE</button>
               <div class="sp-algo-wrap">
                 <label for="select-solve-algo" class="sp-lbl">ALGO:</label>
                 <select id="select-solve-algo" class="sp-select">
@@ -406,7 +434,8 @@
                 <span class="sp-lbl">STEPS</span>
                 <span id="play-steps-counter" class="sp-val">0</span>
               </div>
-              <button id="btn-back-to-campaign" class="btn-hud" type="button" style="display: none;">🗺️ QUEST MAP</button>
+              <button id="btn-back-to-campaign" class="btn-hud" type="button" style="display: none;">🗺️ QUEST
+                MAP</button>
               <button id="btn-home-from-play" class="btn-hud" type="button">🏠 HOME</button>
             </div>
           </div>
@@ -417,11 +446,13 @@
           </div>
 
           <!-- Maze Victory / Game Completed Modal Overlay -->
-          <div id="maze-victory-overlay" class="maze-victory-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="victory-modal-title">
+          <div id="maze-victory-overlay" class="maze-victory-overlay" style="display: none;" role="dialog"
+            aria-modal="true" aria-labelledby="victory-modal-title">
             <canvas id="victory-confetti-canvas" class="victory-confetti-canvas"></canvas>
             <div class="maze-victory-card">
-              <button id="btn-victory-close" class="victory-close-btn" type="button" aria-label="Close modal" title="Close modal">✕</button>
-              
+              <button id="btn-victory-close" class="victory-close-btn" type="button" aria-label="Close modal"
+                title="Close modal">✕</button>
+
               <!-- Performance Stars Showcase (1, 2, or 3 Stars based on Steps & Time) -->
               <div class="victory-stars-area" id="victory-stars-area" aria-label="Performance Stars">
                 <div class="stars-radiance-aura"></div>
@@ -517,13 +548,34 @@
                 <span class="card-legend">SCORE BREAKDOWN</span>
                 <table class="ledger-table">
                   <tbody>
-                    <tr><td>Stamina Efficiency (E)</td><td id="res-stat-e" class="td-num">1.45</td></tr>
-                    <tr><td>Time Multiplier (T)</td><td id="res-stat-t" class="td-num">1.10</td></tr>
-                    <tr><td>Exploration Multiplier (X)</td><td id="res-stat-x" class="td-num">1.00</td></tr>
-                    <tr><td>Base Points</td><td id="res-stat-base" class="td-num">800</td></tr>
-                    <tr><td>Combined Multiplier</td><td id="res-stat-mult" class="td-num">x 1.6</td></tr>
-                    <tr><td>Relics Bonus</td><td id="res-stat-relics" class="td-num">+ 200</td></tr>
-                    <tr><td>Phantoms Beaten</td><td id="res-stat-phantoms" class="td-num">+ 240</td></tr>
+                    <tr>
+                      <td>Stamina Efficiency (E)</td>
+                      <td id="res-stat-e" class="td-num">1.45</td>
+                    </tr>
+                    <tr>
+                      <td>Time Multiplier (T)</td>
+                      <td id="res-stat-t" class="td-num">1.10</td>
+                    </tr>
+                    <tr>
+                      <td>Exploration Multiplier (X)</td>
+                      <td id="res-stat-x" class="td-num">1.00</td>
+                    </tr>
+                    <tr>
+                      <td>Base Points</td>
+                      <td id="res-stat-base" class="td-num">800</td>
+                    </tr>
+                    <tr>
+                      <td>Combined Multiplier</td>
+                      <td id="res-stat-mult" class="td-num">x 1.6</td>
+                    </tr>
+                    <tr>
+                      <td>Relics Bonus</td>
+                      <td id="res-stat-relics" class="td-num">+ 200</td>
+                    </tr>
+                    <tr>
+                      <td>Phantoms Beaten</td>
+                      <td id="res-stat-phantoms" class="td-num">+ 240</td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
@@ -558,7 +610,8 @@
                 <span class="pill-lbl">STARS</span>
                 <span id="camp-stars-val" class="pill-val">0 ⭐</span>
               </div>
-              <button id="btn-camp-reset" class="btn-hud" type="button" title="Reset all progress">RESET PROGRESS</button>
+              <button id="btn-camp-reset" class="btn-hud" type="button" title="Reset all progress">RESET
+                PROGRESS</button>
             </div>
           </div>
 
@@ -573,4 +626,5 @@
 
   <script type="module" src="./src/main.js"></script>
 </body>
+
 </html>

@@ -17,5 +17,8 @@
     "visualization"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "three": "^0.186.1"
+  }
 }

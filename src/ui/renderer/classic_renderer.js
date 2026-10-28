@@ -10,6 +10,7 @@
  */
 
 import { Wall } from '../../core/constants.js';
+import { ThreeSandstoneRenderer } from './three_sandstone_renderer.js';
 
 export class ClassicMazeRenderer {
   /**
@@ -32,10 +33,38 @@ export class ClassicMazeRenderer {
     this.currentHead = -1;
 
     this.theme = 'terminal'; // 'terminal', 'sheet', 'cyber', 'jungle'
+
+    // High-End Genuine 3D Sandstone Labyrinth WebGL Engine (active for 'sheet' / Treasure Map theme)
+    if (canvas && typeof window !== 'undefined') {
+      try {
+        this.threeRenderer = new ThreeSandstoneRenderer(canvas);
+      } catch (err) {
+        console.warn('[ClassicMazeRenderer] ThreeSandstoneRenderer init fallback:', err);
+        this.threeRenderer = null;
+      }
+    } else {
+      this.threeRenderer = null;
+    }
   }
 
   setTheme(theme) {
     this.theme = theme || 'terminal';
+    if (this.threeRenderer) {
+      this.threeRenderer.setTheme(this.theme);
+    }
+    if (this.canvas) {
+      if (this.theme === 'sheet') {
+        this.canvas.style.display = 'none';
+        this.canvas.style.position = 'absolute';
+        this.canvas.style.opacity = '0';
+        this.canvas.style.pointerEvents = 'none';
+      } else {
+        this.canvas.style.display = 'block';
+        this.canvas.style.position = 'relative';
+        this.canvas.style.opacity = '1';
+        this.canvas.style.pointerEvents = 'auto';
+      }
+    }
     this.render();
   }
 
@@ -128,6 +157,9 @@ export class ClassicMazeRenderer {
     this.exploredCells = [];
     this.activeTrail = [];
     this.currentHead = -1;
+    if (this.threeRenderer) {
+      this.threeRenderer.setGrid(grid);
+    }
     this.resize();
     this.render();
   }
@@ -150,6 +182,9 @@ export class ClassicMazeRenderer {
         }
       }
     }
+    if (this.threeRenderer) {
+      this.threeRenderer.setPlayer(cell);
+    }
     this.render();
   }
 
@@ -157,6 +192,9 @@ export class ClassicMazeRenderer {
     if (!this.grid) return;
     this.playerCell = this.grid.start;
     this.playerTrail = [this.grid.start];
+    if (this.threeRenderer) {
+      this.threeRenderer.resetPlayer();
+    }
     this.render();
   }
 
@@ -165,6 +203,9 @@ export class ClassicMazeRenderer {
     this.exploredCells = explored || [];
     this.activeTrail = activeTrail || [];
     this.currentHead = typeof currentHead === 'number' ? currentHead : -1;
+    if (this.threeRenderer) {
+      this.threeRenderer.setSolution(path, explored, activeTrail, currentHead);
+    }
     this.render();
   }
 
@@ -173,19 +214,25 @@ export class ClassicMazeRenderer {
     this.exploredCells = [];
     this.activeTrail = [];
     this.currentHead = -1;
+    if (this.threeRenderer) {
+      this.threeRenderer.clearSolution();
+    }
     this.render();
   }
 
   // Compatibility stubs for callers
-  setEntities() {}
-  setFog() {}
-  setFogEnabled() {}
+  setEntities() { }
+  setFog() { }
+  setFogEnabled() { }
   setScout(cell) { this.setPlayer(cell); }
   setPath(path) { this.solutionPath = path || []; this.render(); }
   clearHeat() { this.exploredCells = []; this.activeTrail = []; this.currentHead = -1; }
   recordVisit(cell) { this.exploredCells.push(cell); }
 
   resize() {
+    if (this.threeRenderer) {
+      this.threeRenderer.resize();
+    }
     if (!this.grid || !this.canvas) return;
     const parent = this.canvas.parentElement;
     const availW = Math.max(320, (parent ? parent.clientWidth : 700) - 24);
@@ -223,10 +270,15 @@ export class ClassicMazeRenderer {
     const totalW = cols * cp + m * 2;
     const totalH = rows * cp + m * 2;
 
-    const colors = this.getThemeColors();
-
     // 1. Clear entire canvas so the rest of the screen shows background animation
     ctx.clearRect(0, 0, totalW, totalH);
+
+    // If 'sheet' (Treasure Map), genuine 3D sandstone WebGL renderer has full visual focus
+    if (this.theme === 'sheet') {
+      return;
+    }
+
+    const colors = this.getThemeColors();
 
     // 2. Draw ONLY the selected maze part as opaque interior
     ctx.fillStyle = colors.mazeBg;
