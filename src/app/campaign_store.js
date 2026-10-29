@@ -46,7 +46,7 @@ export const CAMPAIGN_WORLDS = Object.freeze([
     name: 'Crumbling Castle',
     desc: 'Ancient stone passages that collapse into rubble behind you.',
     icon: '🏰',
-    theme: 'terminal',
+    theme: 'sheet',
     levels: [
       { id: 10, name: 'Courtyard Maze', code: 'v1/33x33/bkt/CASTLE10/b20/t20/pth', size: '33x33', parTime: 65 },
       { id: 11, name: 'Knight Gallery', code: 'v1/37x37/wil/KNIGHT11/b25/t25/pth', size: '37x37', parTime: 75 },

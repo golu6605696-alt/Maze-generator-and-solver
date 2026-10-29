@@ -32,7 +32,7 @@ export class ClassicMazeRenderer {
     this.activeTrail = [];
     this.currentHead = -1;
 
-    this.theme = 'terminal'; // 'terminal', 'sheet', 'cyber', 'jungle'
+    this.theme = 'sheet'; // 'sheet', 'cyber', 'jungle'
 
     // High-End Genuine 3D Sandstone Labyrinth WebGL Engine (active for 'sheet' / Treasure Map theme)
     if (canvas && typeof window !== 'undefined') {
@@ -48,7 +48,7 @@ export class ClassicMazeRenderer {
   }
 
   setTheme(theme) {
-    this.theme = theme || 'terminal';
+    this.theme = (theme === 'terminal' || !theme) ? 'sheet' : theme;
     if (this.threeRenderer) {
       this.threeRenderer.setTheme(this.theme);
     }
@@ -69,12 +69,13 @@ export class ClassicMazeRenderer {
   }
 
   getThemeColors() {
-    let t = this.theme || 'terminal';
-    if (t === 'dark') t = 'terminal';
+    let t = this.theme || 'sheet';
+    if (t === 'dark' || t === 'terminal') t = 'sheet';
     if (t === 'classic') t = 'sheet';
 
     switch (t) {
       case 'sheet': // 📜 Treasure Parchment / Aged Paper
+      default:
         return {
           bg: '#140e0a',                      // Canvas outer background
           mazeBg: '#211811',                  // Inner maze dark sandstone background
@@ -126,25 +127,6 @@ export class ClassicMazeRenderer {
           playerTrail: '#34d399',
           arrowEntrance: '#10b981',
           arrowExit: '#f43f5e',
-        };
-
-      case 'terminal': // 🟡 Golden Field Terminal (Default)
-      default:
-        return {
-          bg: '#0d1117',                      // Deep CRT terminal canvas
-          mazeBg: '#161b22',                  // Terminal slate maze interior
-          wallColor: '#f59e0b',               // Golden brass CRT phosphor walls
-          exploredFill: 'rgba(245, 158, 11, 0.12)',
-          exploredBorder: 'rgba(245, 158, 11, 0.35)',
-          pathBoxFill: 'rgba(245, 158, 11, 0.45)', // Warm amber path-finding box
-          pathBoxBorder: 'rgba(245, 158, 11, 0.88)',
-          headFill: '#fbbf24',                // Glowing golden amber orb
-          headGlow: 'rgba(245, 158, 11, 0.60)',
-          headBorder: '#ffffff',
-          solutionLine: '#ef4444',            // Bold crimson solution line
-          playerTrail: '#f59e0b',
-          arrowEntrance: '#22c55e',
-          arrowExit: '#ef4444',
         };
     }
   }
@@ -245,7 +227,7 @@ export class ClassicMazeRenderer {
 
     // Clamp cell size between 16px and 44px
     this.cellPx = Math.max(16, Math.min(44, fitPx));
-    this.wallThick = Math.max(2, Math.round(this.cellPx * 0.1));
+    this.wallThick = this.theme === 'sheet' ? Math.max(3, Math.round(this.cellPx * 0.18)) : Math.max(2, Math.round(this.cellPx * 0.1));
 
     const totalW = this.grid.cols * this.cellPx + this.margin * 2;
     const totalH = this.grid.rows * this.cellPx + this.margin * 2;

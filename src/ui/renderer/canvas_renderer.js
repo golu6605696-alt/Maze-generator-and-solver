@@ -16,7 +16,7 @@ export class CanvasRenderer {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
 
-    this.theme = 'terminal';
+    this.theme = 'sheet';
     this.patterns = new PatternManager(this.theme);
     this.particles = new ParticleSystem();
 
@@ -52,8 +52,8 @@ export class CanvasRenderer {
   }
 
   setTheme(theme) {
-    this.theme = theme;
-    this.patterns.setTheme(theme);
+    this.theme = (theme === 'terminal' || !theme) ? 'sheet' : theme;
+    this.patterns.setTheme(this.theme);
     if (this.grid) {
       this.rebuildL0();
       this.render();
@@ -180,16 +180,14 @@ export class CanvasRenderer {
   rebuildL0() {
     if (!this.grid) return;
     const ctx = this.l0Ctx;
-    const isTerminal = this.theme === 'terminal';
     const totalW = this.grid.cols * this.cellPx + this.margin * 2;
     const totalH = this.grid.rows * this.cellPx + this.margin * 2;
 
     ctx.clearRect(0, 0, totalW, totalH);
 
     // 1. Background ground
-    let bg = '#0f1416';
-    if (this.theme === 'sheet') bg = '#f4efe6';
-    else if (this.theme === 'cyber') bg = '#0a0c1a';
+    let bg = '#211811';
+    if (this.theme === 'cyber') bg = '#0a0c1a';
     else if (this.theme === 'jungle') bg = '#071510';
     ctx.fillStyle = bg;
     ctx.fillRect(this.margin, this.margin, this.grid.cols * this.cellPx, this.grid.rows * this.cellPx);
@@ -331,12 +329,25 @@ export class CanvasRenderer {
 
     const v = this.heatMap[cell] / this.maxHeat;
     // 5-stop ramp
-    const isTerminal = this.theme === 'terminal';
-    let col = isTerminal ? 'rgba(31,43,40,0.55)' : 'rgba(220,215,196,0.55)';
-    if (v > 0.8) col = isTerminal ? 'rgba(216,102,58,0.55)' : 'rgba(196,87,47,0.55)';
-    else if (v > 0.6) col = isTerminal ? 'rgba(229,169,59,0.55)' : 'rgba(217,154,43,0.55)';
-    else if (v > 0.4) col = isTerminal ? 'rgba(125,138,69,0.55)' : 'rgba(201,181,101,0.55)';
-    else if (v > 0.2) col = isTerminal ? 'rgba(63,82,64,0.55)' : 'rgba(196,199,154,0.55)';
+    let col = 'rgba(220,215,196,0.55)';
+    if (this.theme === 'cyber') {
+      col = 'rgba(35,45,90,0.55)';
+      if (v > 0.8) col = 'rgba(255,0,127,0.7)';
+      else if (v > 0.6) col = 'rgba(0,245,255,0.65)';
+      else if (v > 0.4) col = 'rgba(99,102,241,0.55)';
+      else if (v > 0.2) col = 'rgba(49,46,129,0.55)';
+    } else if (this.theme === 'jungle') {
+      col = 'rgba(12,36,27,0.55)';
+      if (v > 0.8) col = 'rgba(244,63,94,0.7)';
+      else if (v > 0.6) col = 'rgba(250,204,21,0.65)';
+      else if (v > 0.4) col = 'rgba(52,211,153,0.55)';
+      else if (v > 0.2) col = 'rgba(16,185,129,0.55)';
+    } else {
+      if (v > 0.8) col = 'rgba(196,87,47,0.55)';
+      else if (v > 0.6) col = 'rgba(217,154,43,0.55)';
+      else if (v > 0.4) col = 'rgba(201,181,101,0.55)';
+      else if (v > 0.2) col = 'rgba(196,199,154,0.55)';
+    }
 
     this.l1Ctx.fillStyle = col;
     this.l1Ctx.fillRect(x, y, this.cellPx, this.cellPx);
@@ -442,7 +453,7 @@ export class CanvasRenderer {
     // 1. Player route (dashed bone line)
     if (this.playerRoute.length > 1) {
       ctx.save();
-      ctx.strokeStyle = this.theme === 'terminal' ? 'rgba(230,226,216,0.5)' : 'rgba(27,34,36,0.5)';
+      ctx.strokeStyle = this.theme === 'cyber' ? 'rgba(0,245,255,0.5)' : (this.theme === 'jungle' ? 'rgba(52,211,153,0.5)' : 'rgba(217,119,6,0.5)');
       ctx.lineWidth = Math.max(2, cp * 0.2);
       ctx.setLineDash([4, 4]);
       ctx.beginPath();
@@ -460,7 +471,7 @@ export class CanvasRenderer {
     // 2. Final optimal path (solid brass line)
     if (this.path && this.path.length > 1) {
       ctx.save();
-      ctx.strokeStyle = this.theme === 'terminal' ? '#e5a93b' : '#a8741a';
+      ctx.strokeStyle = this.theme === 'cyber' ? '#00f5ff' : (this.theme === 'jungle' ? '#34d399' : '#f59e0b');
       ctx.lineWidth = Math.max(3, cp * 0.25);
       ctx.lineCap = 'square';
       ctx.lineJoin = 'miter';
@@ -540,8 +551,8 @@ export class CanvasRenderer {
       const sz = Math.max(4, cp * 0.3);
 
       ctx.save();
-      ctx.strokeStyle = this.theme === 'terminal' ? p.colorTerminal : p.colorSheet;
-      ctx.fillStyle = this.theme === 'terminal' ? '#0f1416' : '#e6e2d8';
+      ctx.strokeStyle = p.colorSheet || '#f59e0b';
+      ctx.fillStyle = this.theme === 'cyber' ? '#0a0c1a' : (this.theme === 'jungle' ? '#071510' : '#211811');
       ctx.lineWidth = 2;
 
       if (p.glyph === 'circle') {
@@ -679,7 +690,6 @@ export class CanvasRenderer {
   _drawFog(ctx) {
     const m = this.margin;
     const cp = this.cellPx;
-    const isTerminal = this.theme === 'terminal';
 
     for (let r = 0; r < this.grid.rows; r++) {
       for (let c = 0; c < this.grid.cols; c++) {
@@ -690,13 +700,13 @@ export class CanvasRenderer {
 
         if (state === FogState.UNSEEN) {
           // Translucent twilight overlay so maze walls are discernible like an ancient chart
-          ctx.fillStyle = isTerminal ? 'rgba(10, 14, 18, 0.78)' : 'rgba(185, 179, 159, 0.82)';
+          ctx.fillStyle = this.theme === 'cyber' ? 'rgba(10, 14, 26, 0.82)' : (this.theme === 'jungle' ? 'rgba(7, 21, 16, 0.82)' : 'rgba(185, 179, 159, 0.82)');
           ctx.fillRect(x, y, cp, cp);
           ctx.fillStyle = this.patterns.getPattern(ctx, 'fog_hatch');
           ctx.fillRect(x, y, cp, cp);
         } else if (state === FogState.REMEMBERED) {
           // Soft tint overlay for charted passages
-          ctx.fillStyle = isTerminal ? 'rgba(15, 20, 22, 0.38)' : 'rgba(211, 205, 187, 0.38)';
+          ctx.fillStyle = this.theme === 'cyber' ? 'rgba(24, 32, 66, 0.38)' : (this.theme === 'jungle' ? 'rgba(18, 56, 42, 0.38)' : 'rgba(211, 205, 187, 0.38)');
           ctx.fillRect(x, y, cp, cp);
         }
       }
@@ -706,11 +716,10 @@ export class CanvasRenderer {
   _drawRulers(ctx) {
     const m = this.margin;
     const cp = this.cellPx;
-    const isTerminal = this.theme === 'terminal';
 
     ctx.save();
-    ctx.fillStyle = isTerminal ? '#8d978f' : '#5d5e53';
-    ctx.strokeStyle = isTerminal ? '#3a4649' : '#9a9684';
+    ctx.fillStyle = this.theme === 'cyber' ? '#94a3b8' : (this.theme === 'jungle' ? '#a7f3d0' : '#5d5e53');
+    ctx.strokeStyle = this.theme === 'cyber' ? '#232d5a' : (this.theme === 'jungle' ? '#1b4d3e' : '#9a9684');
     ctx.font = '10px "JetBrains Mono", monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -839,7 +848,7 @@ export class CanvasRenderer {
     eCtx.scale(scale, scale);
 
     // Draw background
-    eCtx.fillStyle = this.theme === 'terminal' ? '#0f1416' : '#e6e2d8';
+    eCtx.fillStyle = this.theme === 'cyber' ? '#070913' : (this.theme === 'jungle' ? '#05130e' : '#211811');
     eCtx.fillRect(0, 0, w, h + cartoucheH);
 
     // Draw main canvas
@@ -855,7 +864,7 @@ export class CanvasRenderer {
     eCtx.fillText(cartoucheInfo.title || 'EXPEDITION CARTOUCHE', 28, h + 32);
 
     eCtx.font = '11px "JetBrains Mono", monospace';
-    eCtx.fillStyle = this.theme === 'terminal' ? '#e6e2d8' : '#1b2224';
+    eCtx.fillStyle = this.theme === 'sheet' ? '#f6ecdc' : '#f0fdf4';
     eCtx.fillText(`CODE: ${cartoucheInfo.code || ''}`, 28, h + 52);
 
     return new Promise(resolve => exportCanvas.toBlob(resolve, 'image/png'));

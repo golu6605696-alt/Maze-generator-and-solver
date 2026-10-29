@@ -75,10 +75,10 @@ export class ThreeSandstoneRenderer {
     this.playerTargetPos = new THREE.Vector3();
     this.playerHasTarget = false;
 
-    // World units: cell is 2.0x2.0, walls are 0.44 thick, 1.6 high
+    // World units: cell is 2.0x2.0, walls are 0.58 thick, 1.65 high
     this.CELL_SIZE = 2.0;
-    this.WALL_THICK = 0.44;
-    this.WALL_HEIGHT = 1.6;
+    this.WALL_THICK = 0.58;
+    this.WALL_HEIGHT = 1.65;
 
     this._initThree();
   }
@@ -190,10 +190,11 @@ export class ThreeSandstoneRenderer {
 
   /**
    * Generates procedural PBR textures on offscreen canvases:
-   * 1. Albedo Map: Warm Egyptian sandstone with horizontal sedimentary strata bands,
-   *    chiseled hieroglyphic symbols (ankh, eye of horus, scarab, lotus), and stone mineral grain.
-   * 2. Normal Map: Chiseled block bevels, relief hieroglyphs, and rough stone surface.
-   * 3. Roughness Map: Variation across worn surfaces and recessed joints.
+   * 1. Albedo Map: Warm Egyptian/Caribbean sandstone with sedimentary strata bands,
+   *    chiseled treasure hunt engravings (Compass Rose, Skull & Crossbones, X-Marks-The-Spot,
+   *    Anchor, Skeleton Key, Treasure Chest, Cutlasses, Astrolabe), and masonry block joints.
+   * 2. Normal Map: Physically-accurate chiseled block bevels, relief carvings, and surface relief.
+   * 3. Roughness Map: Variation across worn surfaces and dusty recessed joints.
    */
   _generateSandstoneTextures() {
     if (typeof document === 'undefined') return;
@@ -208,33 +209,30 @@ export class ThreeSandstoneRenderer {
 
     // Base sandstone gradient
     const baseGrad = aCtx.createLinearGradient(0, 0, 0, size);
-    baseGrad.addColorStop(0, '#d8af6e');
-    baseGrad.addColorStop(0.5, '#c59754');
-    baseGrad.addColorStop(1, '#b07f3d');
+    baseGrad.addColorStop(0, '#dfba77');
+    baseGrad.addColorStop(0.5, '#c99b58');
+    baseGrad.addColorStop(1, '#b58442');
     aCtx.fillStyle = baseGrad;
     aCtx.fillRect(0, 0, size, size);
 
     // Sedimentary rock strata (horizontal geological bands)
-    for (let y = 0; y < size; y += 8) {
-      const alpha = 0.04 + Math.sin(y * 0.05) * 0.03;
-      const isDark = (y % 24 === 0);
-      aCtx.fillStyle = isDark ? `rgba(90, 48, 16, ${alpha * 1.5})` : `rgba(255, 230, 180, ${alpha})`;
-      aCtx.fillRect(0, y, size, 4 + (y % 5));
+    for (let y = 0; y < size; y += 6) {
+      const alpha = 0.04 + Math.sin(y * 0.04) * 0.035;
+      const isDark = (y % 18 === 0);
+      aCtx.fillStyle = isDark ? `rgba(90, 48, 16, ${alpha * 1.6})` : `rgba(255, 235, 185, ${alpha})`;
+      aCtx.fillRect(0, y, size, 3 + (y % 5));
     }
 
     // Mineral speckles & stone grain noise
-    for (let i = 0; i < 4000; i++) {
+    for (let i = 0; i < 5000; i++) {
       const x = (i * 197) % size;
       const y = (i * 389) % size;
       const isLight = i % 2 === 0;
-      aCtx.fillStyle = isLight ? 'rgba(255, 240, 200, 0.12)' : 'rgba(70, 35, 10, 0.14)';
+      aCtx.fillStyle = isLight ? 'rgba(255, 245, 210, 0.14)' : 'rgba(70, 32, 10, 0.16)';
       aCtx.fillRect(x, y, 2 + (i % 3), 1.5);
     }
 
-    // Chiseled Ancient Egyptian Hieroglyphs across the stone
-    this._drawChiseledHieroglyphs(aCtx, size);
-
-    // --- 2. Normal Map (Sobel filter over height) ---
+    // --- 2. Normal Map ---
     const normalCanvas = document.createElement('canvas');
     normalCanvas.width = size;
     normalCanvas.height = size;
@@ -244,56 +242,59 @@ export class ThreeSandstoneRenderer {
     nCtx.fillStyle = 'rgb(128, 128, 255)';
     nCtx.fillRect(0, 0, size, size);
 
-    // Stamp engraved bevels and hieroglyph reliefs into the normal map
-    this._drawNormalMapReliefs(nCtx, size);
-
     // --- 3. Roughness Map ---
     const roughCanvas = document.createElement('canvas');
     roughCanvas.width = size;
     roughCanvas.height = size;
     const rCtx = roughCanvas.getContext('2d');
-    rCtx.fillStyle = '#d0d0d0'; // High roughness (diffuse stone)
+    rCtx.fillStyle = '#c4c4c4';
     rCtx.fillRect(0, 0, size, size);
-    for (let i = 0; i < 1500; i++) {
+    for (let i = 0; i < 2000; i++) {
       const x = (i * 223) % size;
       const y = (i * 347) % size;
-      rCtx.fillStyle = i % 2 === 0 ? '#b0b0b0' : '#e8e8e8';
+      rCtx.fillStyle = i % 2 === 0 ? '#adadad' : '#e0e0e0';
       rCtx.fillRect(x, y, 4, 3);
     }
+
+    // A. Chiseled Masonry Block Joints (Stone Course Seams)
+    this._drawMasonryJoints(aCtx, nCtx, rCtx, size);
+
+    // B. Chiseled Authentic Treasure Hunt Signs & Designs
+    this._drawTreasureEngravings(aCtx, nCtx, rCtx, size);
 
     // Create Three.js Textures
     const albedoTex = new THREE.CanvasTexture(albedoCanvas);
     albedoTex.wrapS = THREE.RepeatWrapping;
     albedoTex.wrapT = THREE.RepeatWrapping;
-    albedoTex.repeat.set(2, 2);
+    albedoTex.repeat.set(1.5, 1.5);
 
     const normalTex = new THREE.CanvasTexture(normalCanvas);
     normalTex.wrapS = THREE.RepeatWrapping;
     normalTex.wrapT = THREE.RepeatWrapping;
-    normalTex.repeat.set(2, 2);
+    normalTex.repeat.set(1.5, 1.5);
 
     const roughTex = new THREE.CanvasTexture(roughCanvas);
     roughTex.wrapS = THREE.RepeatWrapping;
     roughTex.wrapT = THREE.RepeatWrapping;
-    roughTex.repeat.set(2, 2);
+    roughTex.repeat.set(1.5, 1.5);
 
     this.textures = { albedoTex, normalTex, roughTex };
 
-    // Create Sandstone PBR Materials
+    // Create Sandstone PBR Materials with prominent carved relief
     this.sandstoneMaterial = new THREE.MeshStandardMaterial({
       map: albedoTex,
       normalMap: normalTex,
-      normalScale: new THREE.Vector2(1.3, 1.3),
+      normalScale: new THREE.Vector2(1.8, 1.8),
       roughnessMap: roughTex,
-      roughness: 0.88,
-      metalness: 0.04,
-      color: 0xd9b375,
+      roughness: 0.85,
+      metalness: 0.05,
+      color: 0xdeb879,
     });
 
     this.floorMaterial = new THREE.MeshStandardMaterial({
       map: albedoTex,
       normalMap: normalTex,
-      normalScale: new THREE.Vector2(0.8, 0.8),
+      normalScale: new THREE.Vector2(0.9, 0.9),
       roughness: 0.92,
       metalness: 0.02,
       color: 0xc49b5d,
@@ -302,106 +303,526 @@ export class ThreeSandstoneRenderer {
     this.borderMaterial = new THREE.MeshStandardMaterial({
       map: albedoTex,
       normalMap: normalTex,
-      normalScale: new THREE.Vector2(1.6, 1.6),
+      normalScale: new THREE.Vector2(2.0, 2.0),
       roughness: 0.82,
-      metalness: 0.05,
+      metalness: 0.06,
       color: 0xdeb879,
     });
   }
 
-  _drawChiseledHieroglyphs(ctx, size) {
-    ctx.save();
-    ctx.strokeStyle = 'rgba(75, 36, 12, 0.45)';
-    ctx.fillStyle = 'rgba(90, 42, 14, 0.35)';
-    ctx.lineWidth = 3;
-    ctx.lineCap = 'round';
+  _drawMasonryJoints(aCtx, nCtx, rCtx, size) {
+    const rowH = 128;
+    const blockW = 256;
 
-    const glyphSize = 48;
-    const spacing = 128;
+    // 1. Horizontal stone course mortar joints
+    for (let y = rowH; y < size; y += rowH) {
+      // Albedo: Dark groove with sunny top edge
+      aCtx.save();
+      aCtx.strokeStyle = 'rgba(255, 240, 205, 0.38)';
+      aCtx.lineWidth = 1.5;
+      aCtx.beginPath();
+      aCtx.moveTo(0, y - 1);
+      aCtx.lineTo(size, y - 1);
+      aCtx.stroke();
 
-    for (let gy = 64; gy < size; gy += spacing) {
-      for (let gx = 64; gx < size; gx += spacing) {
-        const type = (Math.floor(gx / spacing) + Math.floor(gy / spacing)) % 4;
-        ctx.save();
-        ctx.translate(gx, gy);
+      aCtx.strokeStyle = 'rgba(45, 18, 6, 0.65)';
+      aCtx.lineWidth = 2.5;
+      aCtx.beginPath();
+      aCtx.moveTo(0, y + 1);
+      aCtx.lineTo(size, y + 1);
+      aCtx.stroke();
+      aCtx.restore();
 
-        if (type === 0) {
-          // Ankh ☥ (Key of Life)
-          ctx.beginPath();
-          ctx.ellipse(0, -glyphSize * 0.3, glyphSize * 0.22, glyphSize * 0.28, 0, 0, Math.PI * 2);
-          ctx.moveTo(-glyphSize * 0.35, 0);
-          ctx.lineTo(glyphSize * 0.35, 0);
-          ctx.moveTo(0, 0);
-          ctx.lineTo(0, glyphSize * 0.45);
-          ctx.stroke();
-        } else if (type === 1) {
-          // Eye of Horus 𓂀
-          ctx.beginPath();
-          ctx.moveTo(-glyphSize * 0.4, 0);
-          ctx.quadraticCurveTo(0, -glyphSize * 0.3, glyphSize * 0.4, 0);
-          ctx.quadraticCurveTo(0, glyphSize * 0.3, -glyphSize * 0.4, 0);
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.arc(0, 0, glyphSize * 0.12, 0, Math.PI * 2);
-          ctx.fill();
-        } else if (type === 2) {
-          // Scarab Beetle Silhouette
-          ctx.beginPath();
-          ctx.ellipse(0, 0, glyphSize * 0.28, glyphSize * 0.38, 0, 0, Math.PI * 2);
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.moveTo(0, -glyphSize * 0.38);
-          ctx.lineTo(0, glyphSize * 0.38);
-          ctx.stroke();
-        } else {
-          // Sun Disc with Rays & Lotus Reeds
-          ctx.beginPath();
-          ctx.arc(0, -glyphSize * 0.15, glyphSize * 0.2, 0, Math.PI * 2);
-          ctx.stroke();
-          for (let r = 0; r < 5; r++) {
-            ctx.beginPath();
-            ctx.moveTo((r - 2) * 8, glyphSize * 0.15);
-            ctx.lineTo((r - 2) * 8, glyphSize * 0.45);
-            ctx.stroke();
-          }
-        }
-        ctx.restore();
+      // Normal map: Chiseled horizontal groove
+      nCtx.save();
+      nCtx.strokeStyle = 'rgb(128, 70, 255)'; // top-facing normal
+      nCtx.lineWidth = 2.2;
+      nCtx.beginPath();
+      nCtx.moveTo(0, y - 1);
+      nCtx.lineTo(size, y - 1);
+      nCtx.stroke();
+
+      nCtx.strokeStyle = 'rgb(128, 185, 255)'; // bottom-facing normal
+      nCtx.lineWidth = 2.2;
+      nCtx.beginPath();
+      nCtx.moveTo(0, y + 1);
+      nCtx.lineTo(size, y + 1);
+      nCtx.stroke();
+      nCtx.restore();
+
+      // Roughness
+      rCtx.save();
+      rCtx.strokeStyle = '#f0f0f0';
+      rCtx.lineWidth = 2.5;
+      rCtx.beginPath();
+      rCtx.moveTo(0, y);
+      rCtx.lineTo(size, y);
+      rCtx.stroke();
+      rCtx.restore();
+    }
+
+    // 2. Vertical staggered mortar joints
+    for (let row = 0; row < size / rowH; row++) {
+      const y1 = row * rowH;
+      const y2 = y1 + rowH;
+      const xOffset = (row % 2 === 0) ? 0 : blockW / 2;
+
+      for (let x = xOffset; x < size; x += blockW) {
+        if (x <= 0 || x >= size) continue;
+
+        // Albedo: vertical mortar joint
+        aCtx.save();
+        aCtx.strokeStyle = 'rgba(255, 240, 205, 0.35)';
+        aCtx.lineWidth = 1.5;
+        aCtx.beginPath();
+        aCtx.moveTo(x - 1, y1);
+        aCtx.lineTo(x - 1, y2);
+        aCtx.stroke();
+
+        aCtx.strokeStyle = 'rgba(45, 18, 6, 0.65)';
+        aCtx.lineWidth = 2.5;
+        aCtx.beginPath();
+        aCtx.moveTo(x + 1, y1);
+        aCtx.lineTo(x + 1, y2);
+        aCtx.stroke();
+        aCtx.restore();
+
+        // Normal map: vertical groove
+        nCtx.save();
+        nCtx.strokeStyle = 'rgb(75, 128, 255)'; // left normal
+        nCtx.lineWidth = 2.2;
+        nCtx.beginPath();
+        nCtx.moveTo(x - 1, y1);
+        nCtx.lineTo(x - 1, y2);
+        nCtx.stroke();
+
+        nCtx.strokeStyle = 'rgb(180, 128, 255)'; // right normal
+        nCtx.lineWidth = 2.2;
+        nCtx.beginPath();
+        nCtx.moveTo(x + 1, y1);
+        nCtx.lineTo(x + 1, y2);
+        nCtx.stroke();
+        nCtx.restore();
+
+        // Roughness
+        rCtx.save();
+        rCtx.strokeStyle = '#f0f0f0';
+        rCtx.lineWidth = 2.5;
+        rCtx.beginPath();
+        rCtx.moveTo(x, y1);
+        rCtx.lineTo(x, y2);
+        rCtx.stroke();
+        rCtx.restore();
       }
     }
-    ctx.restore();
   }
 
-  _drawNormalMapReliefs(ctx, size) {
-    ctx.save();
-    // Chiseled relief normal stamp: Raised left/top = cyan/magenta, indented right/bottom
-    const glyphSize = 48;
+  _drawTreasureEngravings(aCtx, nCtx, rCtx, size) {
     const spacing = 128;
+    const glyphSize = 52;
 
     for (let gy = 64; gy < size; gy += spacing) {
       for (let gx = 64; gx < size; gx += spacing) {
-        // Highlight side (illuminated normal)
-        ctx.strokeStyle = 'rgb(100, 160, 255)';
-        ctx.lineWidth = 2.5;
-        ctx.strokeRect(gx - glyphSize * 0.35, gy - glyphSize * 0.35, glyphSize * 0.7, glyphSize * 0.7);
+        const colIdx = Math.floor(gx / spacing);
+        const rowIdx = Math.floor(gy / spacing);
+        const type = (colIdx * 3 + rowIdx * 5) % 8;
 
-        // Shadow groove normal
-        ctx.strokeStyle = 'rgb(160, 90, 255)';
-        ctx.lineWidth = 2.5;
-        ctx.strokeRect(gx - glyphSize * 0.32, gy - glyphSize * 0.32, glyphSize * 0.7, glyphSize * 0.7);
+        this._renderTreasureGlyph(aCtx, type, gx, gy, glyphSize, 'albedo');
+        this._renderTreasureGlyph(nCtx, type, gx, gy, glyphSize, 'normal');
+        this._renderTreasureGlyph(rCtx, type, gx, gy, glyphSize, 'roughness');
       }
     }
+  }
+
+  _renderTreasureGlyph(ctx, type, gx, gy, sz, pass) {
+    ctx.save();
+    ctx.translate(gx, gy);
+
+    const drawGlyphGeometry = (c) => {
+      switch (type) {
+        case 0: { // 1. Compass Rose (Wind Rose 🧭)
+          // Outer circle
+          c.beginPath();
+          c.arc(0, 0, sz * 0.42, 0, Math.PI * 2);
+          c.stroke();
+          // Inner circle
+          c.beginPath();
+          c.arc(0, 0, sz * 0.28, 0, Math.PI * 2);
+          c.stroke();
+          // 4 Cardinal Points
+          // North Arrow
+          c.beginPath();
+          c.moveTo(0, -sz * 0.48);
+          c.lineTo(-sz * 0.09, -sz * 0.12);
+          c.lineTo(0, -sz * 0.05);
+          c.lineTo(sz * 0.09, -sz * 0.12);
+          c.closePath();
+          c.stroke();
+          // South Arrow
+          c.beginPath();
+          c.moveTo(0, sz * 0.44);
+          c.lineTo(-sz * 0.08, sz * 0.12);
+          c.lineTo(0, sz * 0.05);
+          c.lineTo(sz * 0.08, sz * 0.12);
+          c.closePath();
+          c.stroke();
+          // East Arrow
+          c.beginPath();
+          c.moveTo(sz * 0.44, 0);
+          c.lineTo(sz * 0.12, -sz * 0.08);
+          c.lineTo(sz * 0.05, 0);
+          c.lineTo(sz * 0.12, sz * 0.08);
+          c.closePath();
+          c.stroke();
+          // West Arrow
+          c.beginPath();
+          c.moveTo(-sz * 0.44, 0);
+          c.lineTo(-sz * 0.12, -sz * 0.08);
+          c.lineTo(-sz * 0.05, 0);
+          c.lineTo(-sz * 0.12, sz * 0.08);
+          c.closePath();
+          c.stroke();
+          // 4 Diagonal Pointers
+          const dLen = sz * 0.26;
+          c.beginPath();
+          c.moveTo(-dLen, -dLen);
+          c.lineTo(dLen, dLen);
+          c.moveTo(dLen, -dLen);
+          c.lineTo(-dLen, dLen);
+          c.stroke();
+          // Center pivot ring
+          c.beginPath();
+          c.arc(0, 0, sz * 0.06, 0, Math.PI * 2);
+          c.stroke();
+          break;
+        }
+
+        case 1: { // 2. "X Marks The Spot" (Treasure Cross ❌)
+          // Bold chiseled serif X
+          const s = sz * 0.36;
+          c.beginPath();
+          c.moveTo(-s, -s);
+          c.lineTo(s, s);
+          c.moveTo(s, -s);
+          c.lineTo(-s, s);
+          c.stroke();
+          // Serifs at ends of X
+          const bar = sz * 0.09;
+          c.beginPath();
+          c.moveTo(-s - bar, -s + bar);
+          c.lineTo(-s + bar, -s - bar);
+          c.moveTo(s - bar, s + bar);
+          c.lineTo(s + bar, s - bar);
+          c.moveTo(s - bar, -s - bar);
+          c.lineTo(s + bar, -s + bar);
+          c.moveTo(-s - bar, s - bar);
+          c.lineTo(-s + bar, s + bar);
+          c.stroke();
+          // Dashed mystery trail leading to X
+          c.beginPath();
+          c.arc(-sz * 0.22, sz * 0.38, 2, 0, Math.PI * 2);
+          c.arc(-sz * 0.12, sz * 0.25, 2, 0, Math.PI * 2);
+          c.arc(-sz * 0.04, sz * 0.12, 2, 0, Math.PI * 2);
+          c.stroke();
+          // 4 Corner survey dots
+          c.beginPath();
+          c.arc(0, -sz * 0.40, 2.5, 0, Math.PI * 2);
+          c.arc(0, sz * 0.40, 2.5, 0, Math.PI * 2);
+          c.arc(-sz * 0.40, 0, 2.5, 0, Math.PI * 2);
+          c.arc(sz * 0.40, 0, 2.5, 0, Math.PI * 2);
+          c.stroke();
+          break;
+        }
+
+        case 2: { // 3. Pirate Skull & Crossbones ☠️
+          // Crossed femur bones behind skull
+          const b = sz * 0.38;
+          c.beginPath();
+          c.moveTo(-b, -b);
+          c.lineTo(b, b);
+          c.moveTo(b, -b);
+          c.lineTo(-b, b);
+          c.stroke();
+          // Bone knobs
+          const kR = sz * 0.06;
+          c.beginPath();
+          c.arc(-b, -b, kR, 0, Math.PI * 2);
+          c.arc(b, b, kR, 0, Math.PI * 2);
+          c.arc(b, -b, kR, 0, Math.PI * 2);
+          c.arc(-b, b, kR, 0, Math.PI * 2);
+          c.stroke();
+          // Skull cranium dome
+          c.beginPath();
+          c.arc(0, -sz * 0.14, sz * 0.22, Math.PI * 0.85, Math.PI * 2.15);
+          c.lineTo(sz * 0.12, sz * 0.14);
+          c.lineTo(-sz * 0.12, sz * 0.14);
+          c.closePath();
+          c.stroke();
+          // Left & right eye sockets
+          c.beginPath();
+          c.arc(-sz * 0.09, -sz * 0.10, sz * 0.055, 0, Math.PI * 2);
+          c.arc(sz * 0.09, -sz * 0.10, sz * 0.055, 0, Math.PI * 2);
+          c.stroke();
+          // Nasal cavity
+          c.beginPath();
+          c.moveTo(0, -sz * 0.04);
+          c.lineTo(-sz * 0.03, sz * 0.02);
+          c.lineTo(sz * 0.03, sz * 0.02);
+          c.closePath();
+          c.stroke();
+          // Teeth slits
+          c.beginPath();
+          c.moveTo(-sz * 0.06, sz * 0.07);
+          c.lineTo(-sz * 0.06, sz * 0.14);
+          c.moveTo(0, sz * 0.07);
+          c.lineTo(0, sz * 0.14);
+          c.moveTo(sz * 0.06, sz * 0.07);
+          c.lineTo(sz * 0.06, sz * 0.14);
+          c.stroke();
+          break;
+        }
+
+        case 3: { // 4. Sunken Galleon Anchor ⚓
+          // Mooring ring
+          c.beginPath();
+          c.arc(0, -sz * 0.36, sz * 0.09, 0, Math.PI * 2);
+          c.stroke();
+          // Horizontal stock crossbar
+          c.beginPath();
+          c.moveTo(-sz * 0.30, -sz * 0.22);
+          c.lineTo(sz * 0.30, -sz * 0.22);
+          c.stroke();
+          // Vertical shank
+          c.beginPath();
+          c.moveTo(0, -sz * 0.27);
+          c.lineTo(0, sz * 0.34);
+          c.stroke();
+          // Curved arms
+          c.beginPath();
+          c.arc(0, sz * 0.12, sz * 0.28, Math.PI * 0.18, Math.PI * 0.82);
+          c.stroke();
+          // Flukes (triangular arrow heads)
+          c.beginPath();
+          c.moveTo(-sz * 0.28, sz * 0.14);
+          c.lineTo(-sz * 0.34, sz * 0.24);
+          c.lineTo(-sz * 0.22, sz * 0.25);
+          c.closePath();
+          c.moveTo(sz * 0.28, sz * 0.14);
+          c.lineTo(sz * 0.34, sz * 0.24);
+          c.lineTo(sz * 0.22, sz * 0.25);
+          c.closePath();
+          c.stroke();
+          // Coiled anchor rope
+          c.beginPath();
+          c.moveTo(-sz * 0.08, -sz * 0.12);
+          c.quadraticCurveTo(0, -sz * 0.06, sz * 0.08, -sz * 0.12);
+          c.moveTo(-sz * 0.08, 0.04);
+          c.quadraticCurveTo(0, 0.10, sz * 0.08, 0.04);
+          c.stroke();
+          break;
+        }
+
+        case 4: { // 5. Ancient Skeleton Key 🗝️
+          // Trefoil bow handle (3 linked circles)
+          c.beginPath();
+          c.arc(0, -sz * 0.34, sz * 0.085, 0, Math.PI * 2);
+          c.arc(-sz * 0.085, -sz * 0.23, sz * 0.085, 0, Math.PI * 2);
+          c.arc(sz * 0.085, -sz * 0.23, sz * 0.085, 0, Math.PI * 2);
+          c.stroke();
+          // Key collar
+          c.beginPath();
+          c.moveTo(-sz * 0.09, -sz * 0.12);
+          c.lineTo(sz * 0.09, -sz * 0.12);
+          c.stroke();
+          // Key shank / shaft
+          c.beginPath();
+          c.moveTo(0, -sz * 0.12);
+          c.lineTo(0, sz * 0.40);
+          c.stroke();
+          // Labyrinth bit (wards)
+          c.beginPath();
+          c.moveTo(0, sz * 0.22);
+          c.lineTo(sz * 0.22, sz * 0.22);
+          c.lineTo(sz * 0.22, sz * 0.38);
+          c.lineTo(sz * 0.12, sz * 0.38);
+          c.lineTo(sz * 0.12, sz * 0.30);
+          c.lineTo(0, sz * 0.30);
+          c.stroke();
+          break;
+        }
+
+        case 5: { // 6. Overflowing Treasure Chest 🪙
+          // Chest rectangular lower body
+          const bw = sz * 0.54;
+          const bh = sz * 0.28;
+          c.strokeRect(-bw / 2, -bh * 0.1, bw, bh);
+          // Arched chest lid
+          c.beginPath();
+          c.moveTo(-bw / 2, -bh * 0.1);
+          c.quadraticCurveTo(0, -sz * 0.38, bw / 2, -bh * 0.1);
+          c.stroke();
+          // Vertical iron reinforcement bands
+          c.beginPath();
+          c.moveTo(-bw * 0.25, -bh * 0.1);
+          c.lineTo(-bw * 0.25, bh * 0.9);
+          c.moveTo(bw * 0.25, -bh * 0.1);
+          c.lineTo(bw * 0.25, bh * 0.9);
+          c.stroke();
+          // Keyhole / lock plate
+          c.strokeRect(-sz * 0.06, bh * 0.15, sz * 0.12, sz * 0.14);
+          c.beginPath();
+          c.arc(0, bh * 0.20, sz * 0.025, 0, Math.PI * 2);
+          c.moveTo(0, bh * 0.22);
+          c.lineTo(0, bh * 0.26);
+          c.stroke();
+          // Gold doubloons around base
+          c.beginPath();
+          c.arc(-sz * 0.18, bh * 0.98, sz * 0.04, 0, Math.PI * 2);
+          c.arc(0, bh * 1.04, sz * 0.045, 0, Math.PI * 2);
+          c.arc(sz * 0.20, bh * 0.96, sz * 0.04, 0, Math.PI * 2);
+          c.stroke();
+          break;
+        }
+
+        case 6: { // 7. Crossed Boarding Sabers ⚔️
+          // Blade 1
+          c.beginPath();
+          c.moveTo(-sz * 0.38, sz * 0.38);
+          c.lineTo(-sz * 0.18, sz * 0.18);
+          c.quadraticCurveTo(0, -sz * 0.05, sz * 0.34, -sz * 0.36);
+          c.stroke();
+          // Saber 1 basket guard
+          c.beginPath();
+          c.arc(-sz * 0.20, sz * 0.20, sz * 0.08, Math.PI * 0.25, Math.PI * 1.75);
+          c.stroke();
+          // Blade 2
+          c.beginPath();
+          c.moveTo(sz * 0.38, sz * 0.38);
+          c.lineTo(sz * 0.18, sz * 0.18);
+          c.quadraticCurveTo(0, -sz * 0.05, -sz * 0.34, -sz * 0.36);
+          c.stroke();
+          // Saber 2 basket guard
+          c.beginPath();
+          c.arc(sz * 0.20, sz * 0.20, sz * 0.08, -Math.PI * 0.75, Math.PI * 0.75);
+          c.stroke();
+          break;
+        }
+
+        case 7:
+        default: { // 8. Nautical Star & Astrolabe ✨
+          // Outer degree circle
+          c.beginPath();
+          c.arc(0, 0, sz * 0.42, 0, Math.PI * 2);
+          c.stroke();
+          // 8-point nautical star
+          c.beginPath();
+          for (let p = 0; p < 8; p++) {
+            const angle = (p * Math.PI) / 4;
+            const rOuter = (p % 2 === 0) ? sz * 0.38 : sz * 0.22;
+            const rInner = sz * 0.10;
+            const ox = Math.cos(angle - Math.PI / 2) * rOuter;
+            const oy = Math.sin(angle - Math.PI / 2) * rOuter;
+            const ix = Math.cos(angle - Math.PI / 2 + Math.PI / 8) * rInner;
+            const iy = Math.sin(angle - Math.PI / 2 + Math.PI / 8) * rInner;
+            if (p === 0) c.moveTo(ox, oy);
+            else c.lineTo(ox, oy);
+            c.lineTo(ix, iy);
+          }
+          c.closePath();
+          c.stroke();
+          // Center pivot point
+          c.beginPath();
+          c.arc(0, 0, sz * 0.05, 0, Math.PI * 2);
+          c.stroke();
+          break;
+        }
+      }
+    };
+
+    if (pass === 'albedo') {
+      // 1. Chiseled Sunny Edge Highlight (offset up-left)
+      ctx.save();
+      ctx.translate(-1.5, -1.5);
+      ctx.strokeStyle = 'rgba(255, 238, 205, 0.42)';
+      ctx.lineWidth = 3.5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      drawGlyphGeometry(ctx);
+      ctx.restore();
+
+      // 2. Chiseled Deep Groove Shadow (offset down-right)
+      ctx.save();
+      ctx.translate(1.5, 1.5);
+      ctx.strokeStyle = 'rgba(42, 17, 5, 0.75)';
+      ctx.lineWidth = 3.5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      drawGlyphGeometry(ctx);
+      ctx.restore();
+
+      // 3. Core Chiseled Trench (rich aged sepia/charcoal pigment in carving)
+      ctx.save();
+      ctx.strokeStyle = 'rgba(65, 28, 8, 0.88)';
+      ctx.lineWidth = 2.4;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      drawGlyphGeometry(ctx);
+      ctx.restore();
+    } else if (pass === 'normal') {
+      // 1. Highlight Slope (top/left facing surface normal)
+      ctx.save();
+      ctx.translate(-1.5, -1.5);
+      ctx.strokeStyle = 'rgb(90, 160, 255)';
+      ctx.lineWidth = 3.2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      drawGlyphGeometry(ctx);
+      ctx.restore();
+
+      // 2. Shaded Slope (bottom/right facing surface normal)
+      ctx.save();
+      ctx.translate(1.5, 1.5);
+      ctx.strokeStyle = 'rgb(165, 95, 255)';
+      ctx.lineWidth = 3.2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      drawGlyphGeometry(ctx);
+      ctx.restore();
+
+      // 3. Center Groove Trench
+      ctx.save();
+      ctx.strokeStyle = 'rgb(115, 115, 230)';
+      ctx.lineWidth = 2.0;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      drawGlyphGeometry(ctx);
+      ctx.restore();
+    } else if (pass === 'roughness') {
+      ctx.save();
+      ctx.strokeStyle = '#f0f0f0'; // Rough dusty chiseled groove
+      ctx.lineWidth = 3.5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      drawGlyphGeometry(ctx);
+      ctx.restore();
+    }
+
     ctx.restore();
   }
 
   // =========================================================================
-  // CAMERA CONTROLS & AUTO-FRAMING
+  // CAMERA CONTROLS & CURSOR-DIRECTED ZOOM
   // =========================================================================
 
   _bindCameraControls() {
     if (!this.webglCanvas) return;
 
+    let isPanning = false;
+
     const onPointerDown = (e) => {
       this.isDragging = true;
+      // Right-click (2), middle-click (1), or shift+click enters pan mode
+      isPanning = (e.button === 2) || (e.button === 1) || e.shiftKey;
       this.previousMousePosition = { x: e.clientX, y: e.clientY };
     };
 
@@ -410,31 +831,85 @@ export class ThreeSandstoneRenderer {
       const deltaX = e.clientX - this.previousMousePosition.x;
       const deltaY = e.clientY - this.previousMousePosition.y;
 
-      // Orbit camera: adjust yaw and pitch
-      this.cameraYaw -= deltaX * 0.006;
-      this.cameraPitch = Math.max(0.55, Math.min(1.50, this.cameraPitch + deltaY * 0.005));
+      if (isPanning) {
+        // Pan camera target parallel to ground plane
+        const panSpeed = this.cameraDistance * 0.0016;
+        const right = new THREE.Vector3(Math.cos(this.cameraYaw), 0, -Math.sin(this.cameraYaw));
+        const forward = new THREE.Vector3(-Math.sin(this.cameraYaw), 0, -Math.cos(this.cameraYaw));
 
-      this._updateCameraPosition();
+        this.cameraTarget.addScaledVector(right, -deltaX * panSpeed);
+        this.cameraTarget.addScaledVector(forward, -deltaY * panSpeed);
+        this._updateCameraPosition();
+      } else {
+        // Orbit camera: adjust yaw and pitch
+        this.cameraYaw -= deltaX * 0.006;
+        this.cameraPitch = Math.max(0.55, Math.min(1.50, this.cameraPitch + deltaY * 0.005));
+        this._updateCameraPosition();
+      }
       this.previousMousePosition = { x: e.clientX, y: e.clientY };
     };
 
     const onPointerUp = () => {
       this.isDragging = false;
+      isPanning = false;
     };
 
+    // Smooth Cursor-Directed Zooming
     const onWheel = (e) => {
       e.preventDefault();
-      const zoomFactor = e.deltaY > 0 ? 1.08 : 0.92;
-      const minD = 8;
-      const maxD = 120;
-      this.cameraDistance = Math.max(minD, Math.min(maxD, this.cameraDistance * zoomFactor));
-      this._updateCameraPosition();
+      if (!this.camera || !this.webglCanvas) return;
+
+      const rect = this.webglCanvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      // Normalized Device Coordinates (-1 to +1)
+      const ndcX = (mouseX / rect.width) * 2 - 1;
+      const ndcY = -(mouseY / rect.height) * 2 + 1;
+
+      const zoomFactor = e.deltaY > 0 ? 1.10 : 0.90;
+      const minD = 5;
+      const maxD = 140;
+      const newD = Math.max(minD, Math.min(maxD, this.cameraDistance * zoomFactor));
+      const actualFactor = newD / this.cameraDistance;
+
+      if (Math.abs(actualFactor - 1.0) > 0.0001) {
+        // Cast ray from camera through cursor position to ground plane
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera({ x: ndcX, y: ndcY }, this.camera);
+
+        const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -this.cameraTarget.y);
+        const intersection = new THREE.Vector3();
+        const hit = raycaster.ray.intersectPlane(plane, intersection);
+
+        if (hit) {
+          // Exact cursor-directed zoom:
+          // Shift cameraTarget towards cursor intersection point P by (1 - actualFactor)
+          const newTarget = intersection.clone().add(
+            this.cameraTarget.clone().sub(intersection).multiplyScalar(actualFactor)
+          );
+
+          // Constrain target within reasonable bounds so it doesn't wander away from maze
+          if (this.grid) {
+            const mw = this.grid.cols * this.CELL_SIZE;
+            const mh = this.grid.rows * this.CELL_SIZE;
+            const pad = this.CELL_SIZE * 3;
+            newTarget.x = Math.max(-pad, Math.min(mw + pad, newTarget.x));
+            newTarget.z = Math.max(-pad, Math.min(mh + pad, newTarget.z));
+          }
+          this.cameraTarget.copy(newTarget);
+        }
+
+        this.cameraDistance = newD;
+        this._updateCameraPosition();
+      }
     };
 
     this.webglCanvas.addEventListener('pointerdown', onPointerDown);
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', onPointerUp);
     this.webglCanvas.addEventListener('wheel', onWheel, { passive: false });
+    this.webglCanvas.addEventListener('contextmenu', (e) => e.preventDefault());
     this.webglCanvas.addEventListener('dblclick', () => {
       if (this.grid) this._autoFrameCamera(this.grid);
     });
@@ -614,7 +1089,7 @@ export class ThreeSandstoneRenderer {
 
   _buildPerimeterBorder(grid, cols, rows, cs, wt, wh) {
     const borderGeos = [];
-    const bThick = wt * 1.35;
+    const bThick = wt * 1.38;
     const mw = cols * cs;
     const mh = rows * cs;
 
@@ -663,6 +1138,21 @@ export class ThreeSandstoneRenderer {
     const eWall = blockGeo(bThick, wh, mh + bThick * 2);
     eWall.translate(mw + bThick / 2, wh / 2, mh / 2);
     borderGeos.push(eWall);
+
+    // 4 Corner Bastions (Monumental watchtower pillars at outer corners)
+    const cSize = bThick * 1.25;
+    const cHeight = wh * 1.15;
+    const corners = [
+      [-bThick / 2, -bThick / 2],
+      [mw + bThick / 2, -bThick / 2],
+      [-bThick / 2, mh + bThick / 2],
+      [mw + bThick / 2, mh + bThick / 2],
+    ];
+    for (const [cx, cz] of corners) {
+      const cPillar = blockGeo(cSize, cHeight, cSize);
+      cPillar.translate(cx, cHeight / 2, cz);
+      borderGeos.push(cPillar);
+    }
 
     if (borderGeos.length > 0) {
       const mergedBorder = this._mergeBufferGeometries(borderGeos);

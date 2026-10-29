@@ -188,41 +188,130 @@ function initApp() {
   const btnOpenQuestMap = document.getElementById('btn-open-quest-map');
   const linkExploreLabyrinth = document.getElementById('link-explore-labyrinth');
 
-  function triggerPortalTransitionAndEnter() {
-    sound.play('win');
-    const overlay = document.getElementById('portal-transition-overlay');
-    if (overlay) {
-      overlay.style.display = 'flex';
-      overlay.classList.remove('fade-out');
-      overlay.classList.add('active');
+  let isPortalTransitioning = false;
 
-      setTimeout(() => {
-        app.transition(AppScreen.EXPEDITION_PLAY);
-        if (!simpleGrid) {
-          startSimpleMaze(simpleDifficulty);
-        } else {
-          requestAnimationFrame(() => {
-            expRenderer.resize();
-            expRenderer.render();
-          });
-        }
-        overlay.classList.add('fade-out');
-        setTimeout(() => {
-          overlay.classList.remove('active', 'fade-out');
-          overlay.style.display = 'none';
-        }, 550);
-      }, 650);
-    } else {
+  function triggerPortalTransitionAndEnter() {
+    if (isPortalTransitioning) return;
+    isPortalTransitioning = true;
+
+    // Visual Elements
+    const heroViewport = document.getElementById('section-gateway');
+    const cameraRig = document.getElementById('gateway-camera-rig');
+    const hotspot = document.getElementById('portal-hotspot');
+    const overlay = document.getElementById('portal-transition-overlay');
+
+    if (!heroViewport || !cameraRig || !hotspot) {
       app.transition(AppScreen.EXPEDITION_PLAY);
-      if (!simpleGrid) {
-        startSimpleMaze(simpleDifficulty);
+      if (!simpleGrid) startSimpleMaze(simpleDifficulty);
+      isPortalTransitioning = false;
+      return;
+    }
+
+    // Dynamic measurements: find the small star in the center of the portal
+    const vRect = heroViewport.getBoundingClientRect();
+    const starElem = hotspot.querySelector('.portal-rune-emblem') || hotspot;
+    const sRect = starElem.getBoundingClientRect();
+
+    const halfW = vRect.width / 2;
+    const halfH = vRect.height / 2;
+
+    // Exact pixel coordinates of the small star relative to hero viewport
+    const starX = (sRect.left + sRect.width / 2) - vRect.left;
+    const starY = (sRect.top + sRect.height / 2) - vRect.top;
+
+    // 1. Play aerodynamic drone "husssshhh" flight whoosh as camera sets off
+    sound.play('whoosh');
+
+    // Fade out hero card text cleanly as camera takes off
+    const heroCard = document.querySelector('.fantasy-hero-content');
+    if (heroCard) {
+      heroCard.style.transition = 'opacity 0.45s ease, transform 0.45s ease';
+      heroCard.style.opacity = '0';
+      heroCard.style.transform = 'translateY(12px) scale(0.96)';
+    }
+
+    hotspot.classList.add('cta-hovered');
+
+    // Dynamic Camera Flight:
+    // Starts slowly, accelerates rapidly across the world, and gently decelerates right before the star
+    const duration = 1150; // 1.15s dynamic flight matching the drone whoosh
+    const startTime = performance.now();
+    const targetScale = 3.6; // focused zoom on the portal vortex & star
+
+    cameraRig.style.transformOrigin = '0px 0px';
+
+    function stepCamera(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(1.0, elapsed / duration);
+
+      // Dynamic S-curve: starts very slowly, moves swiftly in the middle, and softly slows down before the star
+      let e;
+      if (progress < 0.5) {
+        e = Math.pow(progress * 2, 3.2) / 2;
       } else {
-        requestAnimationFrame(() => {
-          expRenderer.resize();
-          expRenderer.render();
-        });
+        e = 1 - Math.pow((1 - progress) * 2, 3.2) / 2;
+      }
+
+      // Interpolate focus point from screen center (halfW, halfH) to star (starX, starY)
+      const curFocusX = halfW + (starX - halfW) * e;
+      const curFocusY = halfH + (starY - halfH) * e;
+      const curScale = 1.0 + (targetScale - 1.0) * e;
+
+      // Keep curFocus centered on the screen (halfW, halfH)
+      const tx = halfW - curFocusX * curScale;
+      const ty = halfH - curFocusY * curScale;
+
+      cameraRig.style.transform = `translate3d(${tx.toFixed(2)}px, ${ty.toFixed(2)}px, 0) scale(${curScale.toFixed(4)})`;
+
+      if (progress < 1.0) {
+        requestAnimationFrame(stepCamera);
+      } else {
+        // Camera has arrived at portal center where the star is
+        // Trigger previous yellow flash overlay with surge rings & golden flash
+        sound.play('win');
+        if (overlay) {
+          overlay.style.display = 'flex';
+          overlay.classList.remove('fade-out');
+          overlay.classList.add('active');
+
+          setTimeout(() => {
+            app.transition(AppScreen.EXPEDITION_PLAY);
+            if (!simpleGrid) {
+              startSimpleMaze(simpleDifficulty);
+            } else {
+              requestAnimationFrame(() => {
+                expRenderer.resize();
+                expRenderer.render();
+              });
+            }
+
+            // Dissolve the yellow flash overlay revealing the maze
+            overlay.classList.add('fade-out');
+            setTimeout(() => {
+              overlay.classList.remove('active', 'fade-out');
+              overlay.style.display = 'none';
+
+              // Cleanly restore camera rig and hero card for when user returns to Gateway
+              cameraRig.style.transform = '';
+              cameraRig.style.transformOrigin = '';
+              if (heroCard) {
+                heroCard.style.opacity = '';
+                heroCard.style.transform = '';
+                heroCard.style.transition = '';
+              }
+              hotspot.classList.remove('cta-hovered');
+              isPortalTransitioning = false;
+            }, 550);
+          }, 650);
+        } else {
+          app.transition(AppScreen.EXPEDITION_PLAY);
+          if (!simpleGrid) startSimpleMaze(simpleDifficulty);
+          isPortalTransitioning = false;
+        }
       }
     }
+
+    requestAnimationFrame(stepCamera);
   }
 
   // Primary CTA click & hover
@@ -741,7 +830,7 @@ function initApp() {
       const isFin = isFinite(p.finishTick);
       const curTick = isFin ? Math.min(data.ticks, p.finishTick) : data.ticks * 0.8;
       const pct = Math.min(100, (curTick / maxTick) * 100);
-      const col = p.colorTerminal || '#38bdf8';
+      const col = p.colorSheet || '#f59e0b';
       html += `
         <div class="race-lane">
           <span class="race-lane-name" style="color: ${col};">${p.name.toUpperCase()}</span>

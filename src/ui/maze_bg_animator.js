@@ -138,7 +138,7 @@ export class MazeBgAnimator {
   }
 
   _getThemePalette() {
-    const theme = document.documentElement.getAttribute('data-theme') || 'terminal';
+    const theme = document.documentElement.getAttribute('data-theme') || 'sheet';
     switch (theme) {
       case 'cyber':
         return {
@@ -163,6 +163,7 @@ export class MazeBgAnimator {
           horizon: 'rgba(16, 185, 129, 0.08)',
         };
       case 'sheet':
+      default:
         return {
           wall: 'rgba(217, 119, 6, 0.48)',
           wallGlow: 'rgba(245, 158, 11, 0.22)',
@@ -172,18 +173,6 @@ export class MazeBgAnimator {
           pulseSecondary: 'rgba(239, 68, 68, 0.85)',
           particle: 'rgba(251, 191, 36, 0.78)',
           horizon: 'rgba(245, 158, 11, 0.18)',
-        };
-      case 'terminal':
-      default:
-        return {
-          wall: 'rgba(245, 158, 11, 0.42)',
-          wallGlow: 'rgba(245, 158, 11, 0.12)',
-          grid: 'rgba(48, 54, 61, 0.35)',
-          gridActive: 'rgba(245, 158, 11, 0.22)',
-          pulse: 'rgba(245, 158, 11, 0.85)',
-          pulseSecondary: 'rgba(56, 189, 248, 0.8)',
-          particle: 'rgba(251, 191, 36, 0.65)',
-          horizon: 'rgba(245, 158, 11, 0.08)',
         };
     }
   }

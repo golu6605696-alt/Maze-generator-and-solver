@@ -90,11 +90,11 @@ test('Auto-Solve - Backtracking yields VISIT and BACKTRACK events correctly remo
   assert.equal(activeTrail[activeTrail.length - 1], grid.end, 'Final active trail must lead to maze exit');
 });
 
-test('ClassicMazeRenderer - getThemeColors provides distinct palettes for terminal, sheet, cyber, jungle', async () => {
+test('ClassicMazeRenderer - getThemeColors provides distinct palettes for sheet, cyber, jungle', async () => {
   const { ClassicMazeRenderer } = await import('../../src/ui/renderer/classic_renderer.js');
   const renderer = new ClassicMazeRenderer(null);
 
-  const themes = ['terminal', 'sheet', 'cyber', 'jungle'];
+  const themes = ['sheet', 'cyber', 'jungle'];
   const palettes = new Set();
 
   for (const th of themes) {
@@ -109,8 +109,8 @@ test('ClassicMazeRenderer - getThemeColors provides distinct palettes for termin
     palettes.add(colors.pathBoxFill);
   }
 
-  // All 4 themes must have distinct path-finding box colors
-  assert.equal(palettes.size, 4, 'All 4 themes must have unique path box colors');
+  // All 3 themes must have distinct path-finding box colors
+  assert.equal(palettes.size, 3, 'All 3 themes must have unique path box colors');
 });
 
 test('ClassicMazeRenderer - setPlayer retracts trail when player gets back/backtracks from a covered path', async () => {

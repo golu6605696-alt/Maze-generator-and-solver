@@ -1,7 +1,7 @@
 /**
  * @file patterns.js
  * Procedural tileable canvas patterns for terrain and fog.
- * Supports: 'terminal', 'sheet', 'cyber', 'jungle'.
+ * Supports: 'sheet', 'cyber', 'jungle'.
  */
 
 import { TerrainType } from '../../core/constants.js';
@@ -10,7 +10,7 @@ export class PatternManager {
   /**
    * @param {string} theme
    */
-  constructor(theme = 'terminal') {
+  constructor(theme = 'sheet') {
     this._theme = theme;
     this._patterns = new Map();
   }
@@ -40,10 +40,9 @@ export class PatternManager {
       // 45-degree hatch lines every 4 px
       patternCanvas.width = 8;
       patternCanvas.height = 8;
-      if (theme === 'sheet') pCtx.strokeStyle = 'rgba(27,34,36,0.15)';
-      else if (theme === 'cyber') pCtx.strokeStyle = 'rgba(0,245,255,0.18)';
+      if (theme === 'cyber') pCtx.strokeStyle = 'rgba(0,245,255,0.18)';
       else if (theme === 'jungle') pCtx.strokeStyle = 'rgba(52,211,153,0.15)';
-      else pCtx.strokeStyle = 'rgba(230,226,216,0.12)'; // terminal
+      else pCtx.strokeStyle = 'rgba(27,34,36,0.15)'; // sheet
 
       pCtx.lineWidth = 1;
       pCtx.beginPath();
@@ -58,11 +57,7 @@ export class PatternManager {
       // Plank lines
       patternCanvas.width = 8;
       patternCanvas.height = 8;
-      if (theme === 'sheet') {
-        pCtx.fillStyle = '#b79d72';
-        pCtx.fillRect(0, 0, 8, 8);
-        pCtx.strokeStyle = '#8c7553';
-      } else if (theme === 'cyber') {
+      if (theme === 'cyber') {
         pCtx.fillStyle = '#1e1b4b';
         pCtx.fillRect(0, 0, 8, 8);
         pCtx.strokeStyle = '#6366f1';
@@ -70,10 +65,10 @@ export class PatternManager {
         pCtx.fillStyle = '#5c4033';
         pCtx.fillRect(0, 0, 8, 8);
         pCtx.strokeStyle = '#38220f';
-      } else { // terminal
-        pCtx.fillStyle = '#7a6648';
+      } else { // sheet
+        pCtx.fillStyle = '#b79d72';
         pCtx.fillRect(0, 0, 8, 8);
-        pCtx.strokeStyle = '#483c2a';
+        pCtx.strokeStyle = '#8c7553';
       }
       pCtx.lineWidth = 1;
       pCtx.beginPath();
@@ -86,11 +81,7 @@ export class PatternManager {
       // Stipple dots
       patternCanvas.width = 6;
       patternCanvas.height = 6;
-      if (theme === 'sheet') {
-        pCtx.fillStyle = '#a89f77';
-        pCtx.fillRect(0, 0, 6, 6);
-        pCtx.fillStyle = '#6f694e';
-      } else if (theme === 'cyber') {
+      if (theme === 'cyber') {
         pCtx.fillStyle = '#4a044e';
         pCtx.fillRect(0, 0, 6, 6);
         pCtx.fillStyle = '#c026d3';
@@ -98,10 +89,10 @@ export class PatternManager {
         pCtx.fillStyle = '#1e3a1e';
         pCtx.fillRect(0, 0, 6, 6);
         pCtx.fillStyle = '#0f220f';
-      } else { // terminal
-        pCtx.fillStyle = '#3b3a26';
+      } else { // sheet
+        pCtx.fillStyle = '#a89f77';
         pCtx.fillRect(0, 0, 6, 6);
-        pCtx.fillStyle = '#201f14';
+        pCtx.fillStyle = '#6f694e';
       }
       pCtx.fillRect(1, 1, 1, 1);
       pCtx.fillRect(4, 4, 1, 1);
@@ -109,11 +100,7 @@ export class PatternManager {
       // Broken cross-hatch with gaps
       patternCanvas.width = 8;
       patternCanvas.height = 8;
-      if (theme === 'sheet') {
-        pCtx.fillStyle = '#a38b78';
-        pCtx.fillRect(0, 0, 8, 8);
-        pCtx.strokeStyle = '#6b584b';
-      } else if (theme === 'cyber') {
+      if (theme === 'cyber') {
         pCtx.fillStyle = '#1e293b';
         pCtx.fillRect(0, 0, 8, 8);
         pCtx.strokeStyle = '#38bdf8';
@@ -121,10 +108,10 @@ export class PatternManager {
         pCtx.fillStyle = '#2d372e';
         pCtx.fillRect(0, 0, 8, 8);
         pCtx.strokeStyle = '#1b231c';
-      } else { // terminal
-        pCtx.fillStyle = '#4a3a33';
+      } else { // sheet
+        pCtx.fillStyle = '#a38b78';
         pCtx.fillRect(0, 0, 8, 8);
-        pCtx.strokeStyle = '#2d221e';
+        pCtx.strokeStyle = '#6b584b';
       }
       pCtx.lineWidth = 1;
       pCtx.beginPath();
@@ -137,11 +124,7 @@ export class PatternManager {
       // Dense cross-hatch, no gaps
       patternCanvas.width = 6;
       patternCanvas.height = 6;
-      if (theme === 'sheet') {
-        pCtx.fillStyle = '#a38b78';
-        pCtx.fillRect(0, 0, 6, 6);
-        pCtx.strokeStyle = '#4e3f35';
-      } else if (theme === 'cyber') {
+      if (theme === 'cyber') {
         pCtx.fillStyle = '#312e81';
         pCtx.fillRect(0, 0, 6, 6);
         pCtx.strokeStyle = '#ec4899';
@@ -149,10 +132,10 @@ export class PatternManager {
         pCtx.fillStyle = '#1f2923';
         pCtx.fillRect(0, 0, 6, 6);
         pCtx.strokeStyle = '#111814';
-      } else { // terminal
-        pCtx.fillStyle = '#4a3a33';
+      } else { // sheet
+        pCtx.fillStyle = '#a38b78';
         pCtx.fillRect(0, 0, 6, 6);
-        pCtx.strokeStyle = '#1e1613';
+        pCtx.strokeStyle = '#4e3f35';
       }
       pCtx.lineWidth = 1;
       pCtx.beginPath();

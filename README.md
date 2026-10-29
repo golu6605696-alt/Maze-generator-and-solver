@@ -35,12 +35,11 @@
 
 ---
 
-### 3. 4 Handcrafted Color Themes
+### 3. 3 Handcrafted Color Themes
 Click **`THEME`** in the top navigation or press <kbd>T</kbd> to cycle between:
-1. **Golden Terminal (Default):** Warm amber CRT phosphor glow (`#f59e0b`), deep slate obsidian background (`#070a0f`), and bronze accents.
-2. **Treasure Map (Parchment):** Aged archival parchment (`#f4ecd8`), antique iron-gall ink (`#291a10`), and deep sepia accents.
-3. **Arcade Cyber Neon:** Electric neon cyan (`#00f5ff`) and arcade pink (`#ff007f`) over deep midnight purple (`#0a0818`).
-4. **Emerald Jungle:** Rainforest moss (`#05130e`), glowing jade pathways (`#34d399`), and sunlit amber gems (`#facc15`).
+1. **Treasure Map (Parchment, Default):** Aged archival parchment (`#f6ecdc`), warm sandstone (`#211811`), and radiant amber gold accents (`#f59e0b`).
+2. **Arcade Cyber Neon:** Electric neon cyan (`#00f5ff`) and arcade pink (`#ff007f`) over deep midnight purple (`#070913`).
+3. **Emerald Jungle:** Rainforest moss (`#05130e`), glowing jade pathways (`#34d399`), and sunlit amber gems (`#facc15`).
 
 ---
 
