@@ -775,7 +775,7 @@ body {
 }
 
 .fantasy-hero-content {
-  max-width: 600px;
+  max-width: 640px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -822,31 +822,73 @@ body {
   text-transform: uppercase;
 }
 
+/* Hero Title Row: Logo at left, Title at right */
+.fantasy-hero-title-row {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+.fantasy-hero-logo-wrap {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fantasy-hero-logo {
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2.5px solid var(--brass);
+  box-shadow: 0 0 18px rgba(var(--accent-rgb), 0.45), 0 6px 14px rgba(0, 0, 0, 0.65);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.fantasy-hero-content:hover .fantasy-hero-logo {
+  transform: scale(1.06) rotate(4deg);
+  border-color: #fef08a;
+  box-shadow: 0 0 28px rgba(var(--accent-rgb), 0.75), 0 8px 18px rgba(0, 0, 0, 0.75);
+}
+
 /* Dramatic Title */
 .fantasy-hero-title {
   display: flex;
   flex-direction: column;
-  font-family: var(--font-display);
-  font-weight: 800;
-  line-height: 1.08;
+  font-family: 'Cinzel Decorative', 'Cinzel', serif;
+  font-weight: 900;
+  line-height: 1.05;
   letter-spacing: 0.04em;
   margin: 0;
 }
 
 .title-line.title-enter {
-  font-size: clamp(26px, 3.8vw, 40px);
+  font-size: clamp(22px, 3.2vw, 36px);
   font-weight: 700;
   color: var(--parchment);
-  letter-spacing: 0.06em;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  letter-spacing: 0.07em;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
 }
 
 .title-line.title-maze {
-  font-size: clamp(44px, 6.5vw, 68px);
+  font-size: clamp(38px, 5.5vw, 62px);
   font-weight: 900;
-  letter-spacing: 0.05em;
-  color: var(--brass);
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5), 0 0 25px rgba(var(--accent-rgb), 0.45);
+  letter-spacing: 0.06em;
+  background: linear-gradient(180deg, #ffffff 0%, #fef08a 25%, #f59e0b 60%, #b45309 88%, #78350f 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 0 #451a03) drop-shadow(0 4px 10px rgba(0, 0, 0, 0.85));
+}
+
+@media (max-width: 520px) {
+  .fantasy-hero-title-row {
+    gap: 14px;
+  }
+  .fantasy-hero-logo {
+    width: 68px;
+    height: 68px;
+  }
 }
 
 /* Supporting Text */
