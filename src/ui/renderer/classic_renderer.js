@@ -76,20 +76,20 @@ export class ClassicMazeRenderer {
     switch (t) {
       case 'sheet': // 📜 Treasure Parchment / Aged Paper
         return {
-          bg: '#f7f2e8',                      // Canvas outer background
-          mazeBg: '#ede4d1',                  // Inner maze paper background
-          wallColor: '#2d261e',               // Crisp dark sepia charcoal walls
-          exploredFill: 'rgba(180, 83, 9, 0.12)',
-          exploredBorder: 'rgba(180, 83, 9, 0.30)',
-          pathBoxFill: 'rgba(180, 83, 9, 0.40)', // Terracotta path-finding box
-          pathBoxBorder: 'rgba(180, 83, 9, 0.85)',
-          headFill: '#b45309',                // Warm sepia seeker head
-          headGlow: 'rgba(180, 83, 9, 0.45)',
+          bg: '#140e0a',                      // Canvas outer background
+          mazeBg: '#211811',                  // Inner maze dark sandstone background
+          wallColor: '#d97706',               // Warm amber gold walls
+          exploredFill: 'rgba(217, 119, 6, 0.15)',
+          exploredBorder: 'rgba(217, 119, 6, 0.35)',
+          pathBoxFill: 'rgba(217, 119, 6, 0.44)', // Golden treasure path box
+          pathBoxBorder: 'rgba(245, 158, 11, 0.90)',
+          headFill: '#f59e0b',                // Radiant gold seeker head
+          headGlow: 'rgba(245, 158, 11, 0.55)',
           headBorder: '#ffffff',
-          solutionLine: '#dc2626',            // Crimson solution path line
-          playerTrail: '#b45309',
-          arrowEntrance: '#15803d',
-          arrowExit: '#dc2626',
+          solutionLine: '#ef4444',            // Crimson solution path line
+          playerTrail: '#f59e0b',
+          arrowEntrance: '#10b981',
+          arrowExit: '#ef4444',
         };
 
       case 'cyber': // 🌌 Arcade Neon

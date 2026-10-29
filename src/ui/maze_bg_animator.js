@@ -164,14 +164,14 @@ export class MazeBgAnimator {
         };
       case 'sheet':
         return {
-          wall: 'rgba(150, 112, 70, 0.35)',
-          wallGlow: 'rgba(180, 83, 9, 0.08)',
-          grid: 'rgba(194, 181, 155, 0.25)',
-          gridActive: 'rgba(180, 83, 9, 0.18)',
-          pulse: 'rgba(180, 83, 9, 0.65)',
-          pulseSecondary: 'rgba(220, 38, 38, 0.6)',
-          particle: 'rgba(150, 112, 70, 0.55)',
-          horizon: 'rgba(180, 83, 9, 0.06)',
+          wall: 'rgba(217, 119, 6, 0.48)',
+          wallGlow: 'rgba(245, 158, 11, 0.22)',
+          grid: 'rgba(160, 105, 50, 0.35)',
+          gridActive: 'rgba(245, 158, 11, 0.32)',
+          pulse: 'rgba(245, 158, 11, 0.92)',
+          pulseSecondary: 'rgba(239, 68, 68, 0.85)',
+          particle: 'rgba(251, 191, 36, 0.78)',
+          horizon: 'rgba(245, 158, 11, 0.18)',
         };
       case 'terminal':
       default:
