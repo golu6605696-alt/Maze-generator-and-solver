@@ -1,4 +1,8 @@
-# Maze Quest: Procedural Labyrinths & Algorithm Arena
+<p align="center">
+  <img src="maze_quest_logo.jpg" alt="Maze Quest - Adventure & Algorithm Arena" width="340">
+</p>
+
+# Maze Quest: Adventure & Algorithm Arena
 
 > **An interactive procedural maze exploration game and DSA algorithm laboratory built with pure vanilla JavaScript, HTML5 Canvas, and modern Web APIs. Zero runtime dependencies, zero build steps.**
 
